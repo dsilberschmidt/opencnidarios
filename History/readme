@@ -1,0 +1,45 @@
+# Historical Archive
+
+This directory preserves the conceptual and chronological origin of the Cnidarios project.
+
+The purpose of this archive is:
+
+* Document authorship and timeline.
+* Separate exploratory phases from the executable open version.
+* Preserve original framing without rewriting it retroactively.
+
+---
+
+## 2025-07 – Cnidarios 0.1 (Institutional Proposal Phase)
+
+This phase corresponds to the initial conceptual articulation of the project between July 12–14, 2025.
+
+Characteristics of that phase:
+
+* Framed as a proposal directed toward a specific institutional context.
+* Contained early formulations of "ruminants".
+* Included exploratory ambition beyond what is now v0.1.
+* Preceded the open-source framing.
+
+Files inside that folder should remain historically faithful, even if technically incomplete.
+
+---
+
+## Separation Principle
+
+OpenCnidarios (current repository) is the reproducible, open implementation track.
+
+Cnidarios 0.1 is preserved here as historical origin, not as active specification.
+
+No historical file should be silently rewritten.
+If clarification is needed, add an addendum instead of editing the original.
+
+---
+
+## Archival Policy
+
+* Preserve timestamps when possible.
+* Avoid retroactive conceptual cleaning.
+* Clearly mark speculative documents as such.
+
+This archive exists to maintain intellectual continuity and traceability.
