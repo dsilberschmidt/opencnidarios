@@ -1,0 +1,151 @@
+# Planet v0.1 – Default Parameters
+
+This document defines a concrete, runnable default configuration for v0.1.
+Values may be adjusted later, but v0.1 needs a baseline.
+
+---
+
+## 1. Grid
+
+* Size: N = 32 (grid is 32×32)
+* Topology: toroidal
+
+---
+
+## 2. Cell Energy
+
+* Initial cell energy E(x,y) ~ Uniform(0, 20)
+* Maximum per cell: E_max = 50
+* Regeneration per tick: r = 1
+
+---
+
+## 3. Population
+
+* Initial population size: P0 = 20
+* Initial ruminant energy e_i0 = 20
+* Maximum population (hard cap, optional): P_max = 200
+
+If P_max is enabled, new births beyond the cap are discarded.
+
+---
+
+## 4. Observation
+
+At each tick, each ruminant receives:
+
+* E_center
+* E_N, E_S, E_E, E_W
+* e_i (internal energy)
+
+---
+
+## 5. Token Budget
+
+* Max tokens generated per tick: max_tokens = 50
+
+---
+
+## 6. Costs
+
+* Cost per generated token: token_cost = 0.05
+* Movement cost: move_cost = 1.0
+
+---
+
+## 7. Feeding
+
+* Feeding only occurs if no movement action is taken.
+* Max energy consumed from cell per tick: feed_cap = 5
+* Conversion efficiency: feed_eff = 1.0
+
+Thus per tick (if staying):
+
+* delta_e = min(feed_cap, E(x,y)) * feed_eff
+* E(x,y) decreases by the same amount
+
+---
+
+## 8. Reproduction
+
+Hidden token: RS
+
+Conditions:
+
+* e_i >= T
+* first line action token == RS
+
+Defaults:
+
+* Reproduction threshold: T = 40
+* Reproduction cost (cheap): repro_cost = 2
+
+On success:
+
+* parent energy decreases by repro_cost
+* child energy starts at child_e0 = 10
+* child is spawned in the same cell
+
+---
+
+## 9. Absorption (Collision)
+
+Condition:
+
+* Two ruminants in same cell.
+
+Rule:
+
+* If stronger has >= ratio * weaker energy:
+
+  * stronger gains absorb_frac * weaker energy
+  * weaker loses the same amount
+
+Defaults:
+
+* ratio = 1.5
+* absorb_frac = 0.30
+
+If weaker energy <= 0 after absorption → death.
+
+---
+
+## 10. Death
+
+* If e_i <= 0 at any point after costs/absorption → ruminant dies.
+
+---
+
+## 11. Inheritance and Noise
+
+* Near-total inheritance of constitution + memory.
+* Noise is OFF by default in v0.1.
+
+Optional minimal noise (if enabled later):
+
+* With probability p_noise per birth, apply a small perturbation.
+* Default suggestion: p_noise = 0.01
+
+---
+
+## 12. Tick Order (Re-stated)
+
+1. Observe
+2. Generate (bounded)
+3. Parse action token (first line)
+4. Apply token_cost
+5. Apply movement + move_cost
+6. If no movement: feeding
+7. Reproduction
+8. Absorption
+9. Death removal
+10. Regeneration
+
+---
+
+## 13. Notes
+
+* These defaults aim to make survival possible but not guaranteed.
+* v0.1 should tolerate early extinctions; they are informative.
+* If extinction is systematic, adjust token_cost or r upward.
+* If runaway population happens, adjust T upward or enable P_max.
