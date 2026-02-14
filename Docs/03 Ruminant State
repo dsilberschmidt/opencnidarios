@@ -1,0 +1,119 @@
+# Ruminant State – v0.1 Specification
+
+## 1. Overview
+
+A ruminant is defined not only by its position and energy, but by its heritable internal state.
+
+In v0.1, inheritance is near-total.
+The child receives almost all structural advantages discovered by the parent.
+
+---
+
+## 2. State Components
+
+Each ruminant contains:
+
+### 2.1 Position (Non-heritable)
+
+* (x, y) coordinates on the grid.
+
+### 2.2 Internal Energy (Non-heritable)
+
+* Current internal energy e_i.
+* Child starts with predefined minimal energy.
+
+### 2.3 Constitution (Heritable)
+
+A textual internal constitution that may include:
+
+* Behavioral heuristics
+* Discovered action tokens
+* Observed correlations
+* Internal rules
+* Experimental strategies
+
+This is stored as structured text.
+
+---
+
+## 3. Memory Model
+
+The ruminant maintains a bounded memory buffer.
+
+Memory may include:
+
+* Recent observations
+* Action-effect correlations
+* Local experiments
+
+The entire memory buffer is inherited by the child.
+
+Memory size is capped to avoid unbounded growth.
+
+---
+
+## 4. Inheritance Model
+
+On reproduction:
+
+* The child receives an almost exact copy of:
+
+  * Constitution
+  * Memory
+
+* Optional minimal stochastic perturbation may be introduced.
+
+The perturbation must be small enough to:
+
+* Allow variation
+* Avoid structural collapse
+
+---
+
+## 5. Noise Policy (v0.1)
+
+Noise should be:
+
+* Low probability
+* Localized
+* Non-destructive
+
+Examples:
+
+* Small textual mutation
+* Random token insertion
+* Slight rule modification
+
+Noise must not invalidate discovered working tokens systematically.
+
+---
+
+## 6. Action Discovery
+
+If a parent discovers that a token triggers movement or reproduction:
+
+* That token is stored in the constitution.
+* Children inherit that knowledge.
+
+This allows rapid lineage expansion once a discovery is made.
+
+---
+
+## 7. Identity
+
+There is no global identity tracking in v0.1.
+Lineage is tracked externally via logs.
+
+---
+
+## 8. Design Goal
+
+The goal of this inheritance system is to:
+
+* Enable accumulation of structural advantage
+* Allow discovery to propagate
+* Maintain evolutionary pressure
+
+Without near-total inheritance, discoveries would be lost each generation.
+
+v0.1 deliberately favors rapid structural fixation once useful patterns are found.
