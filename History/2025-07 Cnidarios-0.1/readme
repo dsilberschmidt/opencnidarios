@@ -1,0 +1,66 @@
+# Cnidarios 0.1 – July 2025 (Original Framing)
+
+## Context
+
+Cnidarios 0.1 was articulated between July 12–14, 2025 as a conceptual proposal.
+
+It preceded the open-source implementation track and was framed within an institutional environment.
+
+This document preserves that original conceptual orientation.
+
+---
+
+## Core Idea (Original Formulation)
+
+* Population of LLM-based entities (“ruminants”).
+* Closed ecological environment.
+* Energy-limited existence.
+* Discovery of hidden structural affordances.
+* Near-total inheritance.
+* Possibility of emergent "wows" (unexpected structural behaviors).
+
+At this stage, the framing included:
+
+* Exploratory ambition toward generality.
+* Speculation about laboratory extraction and external interaction.
+* Conceptual alignment discussions with prior research on ruminant-like systems.
+
+The implementation mechanics were not yet formalized.
+
+---
+
+## Conceptual Emphasis (Historical)
+
+Cnidarios 0.1 emphasized:
+
+* Blind evolutionary dynamics.
+* Emergence without explicit reward signals.
+* The possibility that structured cognition might arise from minimal physics.
+
+It was more philosophical and exploratory than technical.
+
+---
+
+## Differences from OpenCnidarios v0.1
+
+OpenCnidarios v0.1:
+
+* Is fully specified.
+* Is minimal and runnable.
+* Avoids speculative expansion.
+
+Cnidarios 0.1:
+
+* Was broader in scope.
+* Included ideas later postponed (human interaction, monolith, laboratory extraction).
+* Did not yet define concrete numeric parameters.
+
+---
+
+## Archival Integrity
+
+This folder preserves the historical conceptual layer.
+
+It should not be retroactively rewritten to match the later technical formalization.
+
+Addenda may be appended, but original framing should remain intact.
