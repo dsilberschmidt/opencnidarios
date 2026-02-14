@@ -1,0 +1,74 @@
+# Project Timeline
+
+This document consolidates the chronological evolution of the Cnidarios project.
+
+---
+
+## July 12–14, 2025
+
+Initial articulation of **Cnidarios 0.1**.
+
+Characteristics:
+
+* Conceptual formulation of "ruminants".
+* Closed ecological framing.
+* Emphasis on blind evolutionary pressure.
+* Speculative extensions (laboratory extraction, monolith interface, multi-planet scenarios).
+* Institutional-oriented proposal context.
+
+No concrete numeric specification existed at this stage.
+
+---
+
+## Post July 2025 – Conceptual Consolidation
+
+Refinement of:
+
+* Hidden physics model.
+* Near-total inheritance principle.
+* Minimal ecological substrate.
+
+Separation begins between:
+
+* Historical conceptual layer (Cnidarios 0.1)
+* Runnable open implementation track
+
+---
+
+## OpenCnidarios – Open Implementation Phase
+
+Transition toward:
+
+* Fully specified closed-world simulation.
+* Minimal viable planetary physics (v0.1).
+* Explicit numeric parameters.
+* Engine architecture definition.
+* Run protocol and reproducibility.
+
+This phase marks the shift from speculative framing to implementable system.
+
+---
+
+## v0.1 Milestone
+
+Definition of:
+
+* 32×32 toroidal planet
+* Hidden two-letter action tokens
+* Cheap reproduction under threshold conditions
+* Absorption rule
+* Near-total inheritance
+* Minimal logging and run protocol
+
+v0.1 represents the first fully specified and runnable configuration.
+
+---
+
+## Archival Policy
+
+All historical documents remain preserved under `/history/`.
+
+OpenCnidarios documentation reflects the active implementation track.
+
+No retroactive rewriting of original conceptual framing is permitted.
+Addenda must be appended explicitly if clarification is needed.
