@@ -1,0 +1,82 @@
+# Cnidarios 0.1 – Original Pitch (July 2025)
+
+## Premise
+
+What happens if large language models are placed inside a closed, energy-limited world with no explicit reward, no training updates, and no external supervision — and are allowed to persist only through survival and inheritance?
+
+Cnidarios 0.1 proposed exploring this question through a population of "ruminants": LLM-based entities embedded in a minimal ecological substrate.
+
+---
+
+## Core Hypothesis
+
+If:
+
+* Existence is energy-constrained,
+* The environment is closed,
+* Structural affordances exist but are undocumented,
+* Inheritance is near-total,
+
+Then:
+
+Unexpected structural behaviors (“wows”) may emerge through blind evolutionary pressure.
+
+The system would not optimize toward a predefined task.
+It would optimize only toward persistence.
+
+---
+
+## Distinguishing Features
+
+* No reward signal.
+* No gradient updates.
+* No external goal.
+* Discovery must occur through empirical correlation.
+* Structural advantages propagate through lineage.
+
+The entities would not be told how to move, reproduce, or dominate.
+If such behaviors emerged, they would arise from discovering the physics of the world.
+
+---
+
+## Speculative Extensions (At the Time)
+
+The original framing also considered:
+
+* Multiple ecological regimes (“planets”).
+* Extraction of selected individuals into a laboratory setting.
+* Human interaction through a controlled interface ("monolith").
+* Cross-planet migration.
+
+These elements were conceptual and not technically specified.
+
+---
+
+## Research Motivation
+
+The pitch was motivated by questions such as:
+
+* Can structural cognition emerge without reward optimization?
+* Does near-total inheritance accelerate structural fixation?
+* Can hidden but inferable physics induce exploratory behavior?
+* Is blind ecological pressure sufficient to generate non-trivial organization?
+
+---
+
+## Positioning
+
+Cnidarios 0.1 was framed as:
+
+* A conceptual experimental platform.
+* A bridge between evolutionary dynamics and LLM behavior.
+* A potential research program rather than a finished system.
+
+It preceded the fully specified OpenCnidarios v0.1 implementation track.
+
+---
+
+## Historical Note
+
+This document preserves the original ambition and framing as articulated in July 2025.
+
+It intentionally retains speculative scope that was later narrowed for implementation feasibility.
