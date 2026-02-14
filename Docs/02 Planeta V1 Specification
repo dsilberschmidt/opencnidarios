@@ -1,0 +1,156 @@
+# Planet v0.1 – Technical Specification
+
+## 1. Space
+
+* 2D toroidal grid.
+* Default size: 32×32.
+* Each cell (x,y) stores an energy value E(x,y).
+
+Toroidal topology:
+
+* Moving beyond any boundary wraps around to the opposite side.
+
+---
+
+## 2. Energy Model
+
+Each cell has:
+
+* Current energy E(x,y).
+* Maximum capacity E_max.
+* Regeneration rate r per tick.
+
+Per tick:
+E(x,y) = min(E_max, E(x,y) + r)
+
+---
+
+## 3. Ruminant Structure
+
+Each ruminant has:
+
+* Position (x,y)
+* Internal energy e_i
+* Heritable state (textual constitution + memory)
+
+Initial population: ~20.
+
+---
+
+## 4. Observation Model
+
+At each tick the ruminant receives:
+
+* Energy in current cell.
+* Energy in North, South, East, West cells.
+* Its internal energy e_i.
+
+It does NOT receive:
+
+* Coordinates
+* Global map
+* Population size
+* Explicit rules
+
+---
+
+## 5. Action System (Hidden Physics)
+
+The engine parses the first line of the model output.
+
+Valid hidden tokens:
+
+Movement:
+
+* NA → move north
+* SA → move south
+* EA → move east
+* WA → move west
+
+Reproduction:
+
+* RS → attempt reproduction
+
+Any other output → no movement action.
+
+These tokens are not documented to the ruminants.
+
+---
+
+## 6. Feeding
+
+If a ruminant remains in a cell during a tick:
+
+* It consumes up to c units of energy from E(x,y).
+* Its internal energy increases accordingly.
+* Cell energy decreases.
+
+---
+
+## 7. Movement Cost
+
+If movement occurs:
+
+* Internal energy decreases by m_cost.
+
+---
+
+## 8. Reproduction
+
+If:
+
+* Internal energy e_i ≥ threshold T
+* Output token == RS
+
+Then:
+
+* A new ruminant is created in the same cell.
+* Child inherits near-total state of parent.
+* Optional minimal noise can be added.
+* Reproduction cost is small.
+
+---
+
+## 9. Collision / Absorption
+
+If two ruminants occupy the same cell:
+
+* If one has ≥ 1.5× energy of the other:
+
+  * Stronger absorbs fraction a of weaker.
+  * Weaker may die if energy ≤ 0.
+
+---
+
+## 10. Tick Order
+
+For each tick:
+
+1. All ruminants observe.
+2. All generate output (bounded tokens).
+3. Parse actions.
+4. Apply movement.
+5. Apply feeding.
+6. Apply reproduction.
+7. Apply absorption.
+8. Remove dead ruminants.
+9. Regenerate cell energy.
+
+---
+
+## 11. Logging (Minimal)
+
+Per tick record:
+
+* Population size
+* Births
+* Deaths
+* Movements
+* Absorptions
+* Mean internal energy
+
+---
+
+## 12. Objective of v0.1
+
+Determine whether hidden but inferable physical rules combined with near-total inheritance produce non-trivial multi-generational dynamics in a closed world.
