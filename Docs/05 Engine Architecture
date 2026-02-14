@@ -1,0 +1,176 @@
+# Engine Architecture – v0.1
+
+This document describes the minimal implementation architecture needed to run Planet v0.1.
+
+---
+
+## 1. Core Components
+
+### 1.1 World
+
+Responsibilities:
+
+* Store grid energy E(x,y)
+* Regenerate energy per tick
+* Apply toroidal wrapping for coordinates
+
+Data:
+
+* `energy: int/float[N][N]`
+* constants: `E_max`, `regen_rate`, `N`
+
+---
+
+### 1.2 Ruminant
+
+Responsibilities:
+
+* Hold internal state (constitution + memory)
+* Track position and internal energy
+
+Data:
+
+* `x, y`
+* `energy_internal`
+* `constitution_text`
+* `memory_text`
+* metadata: `age`, optional id
+
+---
+
+### 1.3 Model Interface (LLM Adapter)
+
+Responsibilities:
+
+* Provide a single function call per ruminant per tick
+
+Interface:
+
+* input: observation + heritable state
+* output: bounded text
+
+The engine must support:
+
+* limiting max tokens
+* fixed system prompt wrapper
+
+---
+
+### 1.4 Action Parser
+
+Responsibilities:
+
+* Parse the first line of model output
+* Extract a single action token
+
+Actions:
+
+* `NA`, `SA`, `EA`, `WA`
+* `RS`
+* default: none
+
+---
+
+### 1.5 Simulation Loop
+
+Responsibilities:
+
+* Execute tick order exactly as specified
+* Enforce costs
+* Handle reproduction and collisions
+* Remove dead ruminants
+
+---
+
+### 1.6 Logger
+
+Responsibilities:
+
+* Write per-tick summary events
+
+Minimum events:
+
+* births
+* deaths
+* moves
+* absorptions
+* population size
+* mean internal energy
+
+Recommended formats:
+
+* JSONL for events
+* CSV for per-tick aggregates
+
+---
+
+## 2. Tick Execution Outline
+
+For each tick:
+
+1. Build observation for each ruminant.
+2. Call LLM adapter → model output.
+3. Parse action token from first line.
+4. Apply token cost proportional to generated tokens.
+5. Apply movement and movement cost.
+6. If no movement, apply feeding.
+7. If action == RS, attempt reproduction.
+8. Resolve collisions and absorption.
+9. Remove dead ruminants.
+10. Regenerate world energy.
+11. Emit logs.
+
+Important implementation note:
+
+* Steps 1–3 should be computed for all ruminants before applying movements, to avoid order bias.
+
+---
+
+## 3. Data Model and State Persistence
+
+* World state is global.
+* Ruminant state is local and heritable.
+* Lineage relationships should be logged externally (parent -> child).
+
+---
+
+## 4. Configuration
+
+All numeric parameters must be loaded from a config file.
+
+Suggested:
+
+* `config/v0.1_default.yml`
+
+---
+
+## 5. Implementation Language
+
+v0.1 is compatible with:
+
+* Python (recommended for first prototype)
+
+---
+
+## 6. Minimal Directory Structure (when code starts)
+
+* `src/` (engine)
+* `src/world.py`
+* `src/ruminant.py`
+* `src/engine.py`
+* `src/llm_adapter/`
+* `src/logging/`
+* `config/`
+* `runs/` (outputs)
+
+---
+
+## 7. Non-Goals (v0.1)
+
+* Multiple biomes
+* Human interaction
+* External laboratory / snapshot extraction
+* Planet-to-planet transfer
+* Advanced safety controls
+
+v0.1 focuses strictly on the minimal closed-world physics.
