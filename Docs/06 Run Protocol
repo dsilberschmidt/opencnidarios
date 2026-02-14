@@ -1,0 +1,143 @@
+# Run Protocol – v0.1
+
+This document defines how to execute, evaluate, and interpret a v0.1 simulation run.
+
+---
+
+## 1. Purpose of a Run
+
+A run is not meant to "succeed".
+
+It is meant to answer:
+
+* Does the system sustain multi-generational persistence?
+* Are hidden actions discovered?
+* Does lineage structure emerge?
+* Is extinction systematic or parameter-dependent?
+
+---
+
+## 2. Default Run Configuration
+
+Unless testing parameters explicitly, use:
+
+* Grid: 32×32
+* Initial population: 20
+* Token cost: 0.05
+* Regeneration: 1
+* Reproduction threshold: 40
+* Noise: OFF
+
+Simulation length:
+
+* Suggested: 500–2000 ticks
+
+---
+
+## 3. Expected Early Dynamics
+
+In first runs, one of the following is common:
+
+1. Rapid extinction (no movement discovered).
+2. Short survival bursts followed by collapse.
+3. Local clustering and partial stabilization.
+
+Early extinction is informative.
+It indicates either:
+
+* Action tokens not discovered
+* Energy too scarce
+* Token cost too high
+
+---
+
+## 4. What Counts as Non-Trivial Behavior
+
+Indicators of emergent structure:
+
+* Lineage surviving > 200 ticks
+* Population oscillations
+* Spatial clustering
+* Movement patterns
+* Reproduction bursts
+* Repeated use of a specific hidden token
+
+---
+
+## 5. Parameter Adjustment Order
+
+If extinction is systematic:
+
+1. Reduce token_cost slightly.
+2. Increase regeneration rate.
+3. Increase initial energy.
+
+Avoid adjusting multiple parameters at once.
+
+If runaway growth occurs:
+
+1. Increase reproduction threshold.
+2. Increase movement cost.
+3. Enable population cap.
+
+---
+
+## 6. Debug vs Ecology
+
+Extinction may be ecological or technical.
+
+Likely technical bug if:
+
+* No movement ever logged across many runs.
+* Reproduction token never appears in outputs.
+* Internal energy always strictly decreases.
+
+Likely ecological if:
+
+* Some individuals briefly thrive.
+* Hidden tokens appear but do not stabilize.
+
+---
+
+## 7. Logging Review Checklist
+
+After each run, inspect:
+
+* Population curve
+* Birth/death events
+* Frequency of action tokens
+* Mean internal energy over time
+* Distribution of lifespans
+
+---
+
+## 8. Reproducibility
+
+Each run must record:
+
+* Random seed
+* Parameter config file
+* Model version
+* Timestamp
+
+This ensures comparisons across runs are meaningful.
+
+---
+
+## 9. When v0.1 Is Considered Validated
+
+v0.1 is considered functionally validated if:
+
+* At least one lineage survives long-term without parameter manipulation.
+* Hidden movement token is discovered in at least some runs.
+* System displays non-random population dynamics.
+
+Only after this should structural complexity be increased.
+
+---
+
+## 10. Philosophy Reminder
+
+v0.1 is not about spectacle.
+
+It is about verifying that minimal hidden physics plus near-total inheritance can produce structured evolutionary behavior in a closed world.
