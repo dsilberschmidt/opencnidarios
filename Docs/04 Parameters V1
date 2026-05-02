@@ -16,7 +16,7 @@ Values may be adjusted later, but v0.1 needs a baseline.
 
 * Initial cell energy E(x,y) ~ Uniform(0, 20)
 * Maximum per cell: E_max = 50
-* Regeneration per tick: r = 1
+* Regeneration per tick: r = 0.2
 
 ---
 
@@ -49,6 +49,7 @@ At each tick, each ruminant receives:
 ## 6. Costs
 
 * Cost per generated token: token_cost = 0.05
+* Base metabolic cost per ruminant per tick: base_metabolic_cost = 2.0
 * Movement cost: move_cost = 1.0
 
 ---
@@ -56,12 +57,13 @@ At each tick, each ruminant receives:
 ## 7. Feeding
 
 * Feeding only occurs if no movement action is taken.
-* Max energy consumed from cell per tick: feed_cap = 5
+* Max energy consumed from cell per tick: feed_cap = 2.0
 * Conversion efficiency: feed_eff = 1.0
 
 Thus per tick (if staying):
 
 * delta_e = min(feed_cap, E(x,y)) * feed_eff
+* base_metabolic_cost and token_cost are paid separately before feeding
 * E(x,y) decreases by the same amount
 
 ---
@@ -133,7 +135,7 @@ Optional minimal noise (if enabled later):
 1. Observe
 2. Generate (bounded)
 3. Parse action token (first line)
-4. Apply token_cost
+4. Apply token_cost + base_metabolic_cost
 5. Apply movement + move_cost
 6. If no movement: feeding
 7. Reproduction

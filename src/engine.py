@@ -93,9 +93,11 @@ class Engine:
 
         # 4) Apply token cost
         token_cost = self.p["token_cost"]
+        base_metabolic_cost = self.p.get("base_metabolic_cost", 0)
         for idx, r in enumerate(self.ruminants):
             n_tok = outputs[idx]["tokens"]
             r.energy_internal -= float(n_tok) * float(token_cost)
+            r.energy_internal -= float(base_metabolic_cost)
 
         # 5) Apply movement + move_cost
         move_cost = self.p["move_cost"]
