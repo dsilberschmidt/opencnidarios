@@ -16,11 +16,12 @@ from typing import Optional
 
 
 class Logger:
-    def __init__(self, out_dir: str = "runs/latest"):
+    def __init__(self, out_dir: str = "runs/latest", run_id: str | None = None):
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
 
-        self.csv_path = self.out_dir / "ticks.csv"
+        filename = f"ticks_{run_id}.csv" if run_id else "ticks.csv"
+        self.csv_path = self.out_dir / filename
         self._csv_file = self.csv_path.open("w", newline="", encoding="utf-8")
         self._csv = None
 

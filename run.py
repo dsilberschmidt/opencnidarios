@@ -36,7 +36,8 @@ def main():
     assert adapter_cfg["type"] == "dummy"
     llm = DummyAdapter(p_action=adapter_cfg["p_action"], seed=seed)
 
-    logger = Logger(out_dir=cfg["out_dir"])
+    run_id = f"{cfg['meta']['date']}_{cfg['meta']['name']}"
+    logger = Logger(out_dir=cfg["out_dir"], run_id=run_id)
 
     engine = Engine(world=world, llm_adapter=llm, params=params, logger=logger)
 
