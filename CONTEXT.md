@@ -21,7 +21,7 @@ genuina dentro de su contexto, en lugar de seguir instrucciones explícitas.
 
 ---
 
-## Estado actual (al 2026-04-30)
+## Estado actual (al 2026-04-30 — diagnóstico recalculado 2026-06-11)
 
 **Primera simulación completada — smoke test con DummyAdapter v0.1.**
 
@@ -48,11 +48,16 @@ movimientos, absorciones), pero **la ecología no está balanceada**.
 La energía media crece casi monotónicamente sin ninguna presión real.
 Diagnóstico de las tres causas raíz:
 
+> _Nota 2026-06-11: números verificados contra `runs/configs/v01_smoke_test.json`
+> (diff vacío contra el ticks.csv archivado). El CONTEXT.md original calculaba con
+> regen\_rate=0.2 y feed\_cap=2.0; el run real usó regen\_rate=1 y feed\_cap=5._
+
 ### 1. La regeneración del mundo es demasiado generosa
 `regenerate()` suma `regen_rate` como valor absoluto a cada celda.
-Con `regen_rate = 0.2` y un grid de 32×32 = 1024 celdas, entran
-**~204.8 unidades de energía por tick** al sistema. Con 20-37 ruminantes
-comiendo máximo 2.0 cada uno, siempre sobra comida.
+Con `regen_rate = 1` y un grid de 32×32 = 1024 celdas, entran
+**~1024 unidades de energía por tick** al sistema. Con 20-37 ruminantes
+comiendo máximo 5.0 cada uno, el consumo máximo teórico es 37 × 5 = 185
+por tick — siempre sobra comida por un factor de ~5.5×.
 
 ### 2. Comer es gratis aunque no se haga nada
 En el paso de feeding del engine, la condición alimenta también cuando la
@@ -72,8 +77,8 @@ Recalibración de parámetros en la config:
 
 | parámetro              | v0.1 | v0.2 propuesto | razón                              |
 |------------------------|------|----------------|------------------------------------|
-| regen_rate             | 0.2  | 0.05           | mundo 4x más lento en regenerar    |
-| base_metabolic_cost    | 2.0  | 4.0            | quedarse quieto debe costar        |
+| regen_rate             | 1    | 0.05           | mundo 20x más lento en regenerar   |
+| base_metabolic_cost    | ausente (0) | 4.0  | quedarse quieto debe costar        |
 | repro_threshold        | 40   | 60             | reproducirse requiere más energía  |
 | repro_cost             | 2    | 20             | reproducirse debe ser caro         |
 | child_e0               | 10   | 8              | hijos más vulnerables              |
