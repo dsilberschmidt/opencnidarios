@@ -38,8 +38,9 @@ Resultado:
 - Población subió de 20 a 37.
 - Energía interna media subió de ~24 (tick 1) a ~563 (tick 500).
 
-Conclusión: **el engine funciona** (ticks avanzan, hay nacimientos, muertes,
-movimientos, absorciones), pero **la ecología no está balanceada**.
+Conclusión: **el engine funciona** y la ecología tiene presión real. Primera corrida
+v02 produjo extinción en tick 100 por desbalance de parámetros (ver branch).
+La lógica de dos fuentes de energía está implementada y validada mecánicamente.
 
 ---
 
@@ -71,21 +72,58 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 
 ---
 
-## Cambios propuestos para v0.2 (NO aplicados todavía)
+## Estado de la branch `experiment/v02-two-energy-sources`
 
-Recalibración de parámetros en la config:
+### Implementado
 
-| parámetro              | v0.1 | v0.2 propuesto | razón                              |
-|------------------------|------|----------------|------------------------------------|
-| regen_rate             | 1    | 0.05           | mundo 20x más lento en regenerar   |
-| base_metabolic_cost    | ausente (0) | 4.0  | quedarse quieto debe costar        |
-| repro_threshold        | 40   | 60             | reproducirse requiere más energía  |
-| repro_cost             | 2    | 20             | reproducirse debe ser caro         |
-| child_e0               | 10   | 8              | hijos más vulnerables              |
+**Dos fuentes de energía activas (ninguna pasiva — todas requieren acción explícita):**
+- `EAT` — quimiotrofía: acción descrita; extrae energía de la celda (finita, agotable). Fácil de descubrir.
+- `PHOTOSYNTHESIZE` — fotosíntesis: acción oculta (no descrita al organismo); da `photo_energy` sin agotar celda. Difícil de descubrir.
+- `None` y cualquier otra acción: no alimentan.
 
-Cambio de lógica en el engine (feeding):
-- Que quedarse quieto sin emitir acción NO alimente al máximo, o que tenga
-  penalidad. Hoy `None` entra en el feeding con `feed_cap` completo.
+**Base metabolic cost:** se drena **después** del feeding. Un organismo que come en su tick crítico puede sobrevivir.
+
+**`cell_energy_hi` en `World`:** cap de celda separado del cap de organismo (`E_max`). `regenerate()` clampea a `world_energy_hi`.
+
+**DummyAdapter:** split `p_action` (acciones descritas: EAT, MOVE, RS) / `p_hidden` (PHOTOSYNTHESIZE).
+
+**Parámetros v02:**
+
+| parámetro | v01 | v02 |
+|---|---|---|
+| `regen_rate` | 1 | 0.1 |
+| `base_metabolic_cost` | 0 | 0.4 |
+| `photo_energy` | ausente | 4.0 |
+| `repro_threshold` | 40 | 60 |
+| `repro_cost` | 2 | 20 |
+| `feed_cap` | 5 | 6 |
+| `e_i0` | 20 | 25 |
+| `E_max` | 50 | 100 |
+| `p_action` (DummyAdapter) | 0.02 | 0.05 |
+| `p_hidden` (DummyAdapter) | ausente | 0.01 |
+
+### Pendiente (balance y pesos)
+
+Primera corrida v02: extinción en tick 100. Causa: `EAT` es 1 de 6 acciones en
+`_NORMAL_ACTIONS` → se emite el 0.83% de los ticks, no el 5% asumido en el diseño.
+Balance real: −0.38 u/tick. Fix pendiente: bajar `base_metabolic_cost` o darle a
+`EAT` su propia probabilidad.
+
+El pool del DummyAdapter usa **pesos uniformes** (`random.choice` sin pesos) —
+todas las acciones del espacio normal tienen la misma probabilidad. Los pesos
+dinámicos por organismo ajustados con `feedback()` son el próximo paso 3; no
+están implementados.
+
+### Reglas del mundo v02
+
+- Grid: 32×32 toroidal, metabolismo basal siempre activo
+- **Tres fuentes de energía** (ninguna gratis, todas hay que descubrirlas):
+  1. **EAT** — quimiotrofía: fácil (acción descrita), finita
+  2. **PHOTOSYNTHESIZE** — fotosíntesis: difícil (acción oculta), renovable
+  3. **ATTACK** — depredación: no implementada aún; reemplazará la absorción
+     pasiva por colisión (step 8 del engine actual)
+- Absorción pasiva por colisión: **aún activa** en el engine; se eliminará cuando
+  se implemente ATTACK deliberado
 
 ---
 
@@ -129,11 +167,20 @@ El historial de experimentos queda en git, no en nombres de archivo.
 
 ## Próximos pasos (en orden)
 
-1. Refactor: config separada del código (`run.py` lee JSON).
-2. Aplicar parámetros v0.2 en una branch, correr simulación, comparar con v0.1.
-3. Arreglar la lógica de feeding (que `None` no alimente al máximo).
-4. Cuando la ecología tenga dynamics reales → reemplazar DummyAdapter por
-   un adapter de LLM real.
+1. **Calibrar balance v02**: fix del desbalance EAT/metabolic para evitar
+   extinción con DummyAdapter.
+2. **Agregar `feedback()`** al adapter:
+   - Método abstracto en `src/llm_adapter/base.py`
+   - Implementado en `DummyAdapter`: acumula señales positivas/negativas por organismo
+   - Llamado desde `engine.py` después de aplicar cada acción (el engine conoce el delta de energía)
+3. **Pesos dinámicos por organismo**: cada organismo mantiene su propio pool de
+   pesos sobre las acciones (inicialmente uniforme); `feedback()` los ajusta con
+   refuerzo positivo. Permite que los organismos aprendan sin ser LLMs reales.
+4. **Implementar ATTACK**: acción deliberada que reemplaza la absorción pasiva.
+   El organismo emite ATTACK; el engine resuelve la pelea y transfiere energía.
+   La absorción por colisión (step 8) se elimina.
+5. **Reemplazar DummyAdapter** por adapter de LLM real cuando la ecología tenga
+   dinámicas estables.
 
 ---
 

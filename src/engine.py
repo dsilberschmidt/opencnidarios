@@ -1,11 +1,6 @@
-"""OpenCnidarios v0.1 – minimal simulation engine (scaffold).
+"""OpenCnidarios v0.2 – simulation engine.
 
 Non-goals: performance, parallelism, multi-biome, human interaction.
-This file is a runnable skeleton to be completed alongside:
-- world.py
-- ruminant.py
-- llm_adapter/*
-- logging/*
 
 Spec references:
 - docs/02_planeta_v1_specification.md
@@ -60,7 +55,7 @@ class Engine:
     def _parse_action(self, text: str) -> Optional[str]:
         # First line only
         first = (text or "").splitlines()[0].strip() if text else ""
-        if first in {"NA", "SA", "EA", "WA", "RS"}:
+        if first in {"NA", "SA", "EA", "WA", "RS", "EAT", "PHOTOSYNTHESIZE"}:
             return first
         return None
 
@@ -93,11 +88,9 @@ class Engine:
 
         # 4) Apply token cost
         token_cost = self.p["token_cost"]
-        base_metabolic_cost = self.p.get("base_metabolic_cost", 0)
         for idx, r in enumerate(self.ruminants):
             n_tok = outputs[idx]["tokens"]
             r.energy_internal -= float(n_tok) * float(token_cost)
-            r.energy_internal -= float(base_metabolic_cost)
 
         # 5) Apply movement + move_cost
         move_cost = self.p["move_cost"]
@@ -117,14 +110,24 @@ class Engine:
                 r.energy_internal -= float(move_cost)
                 moves += 1
 
-        # 6) Feeding (only if no movement action)
+        # 6) Feeding: EAT draws from cell; PHOTOSYNTHESIZE draws from renewable source.
+        #    None or any other action: no energy gain.
         feed_cap = self.p["feed_cap"]
         feed_eff = self.p["feed_eff"]
+        photo_energy = float(self.p.get("photo_energy", 0.0))
         for idx, r in enumerate(self.ruminants):
             a = outputs[idx]["action"]
-            if a not in {"NA", "SA", "EA", "WA"}:
+            if a == "EAT":
                 taken = self.world.take_energy(r.x, r.y, feed_cap)
                 r.energy_internal += float(taken) * float(feed_eff)
+            elif a == "PHOTOSYNTHESIZE":
+                r.energy_internal += photo_energy
+
+        # 6.5) Metabolic drain — after feeding so an organism that eats on its last tick survives.
+        base_metabolic_cost = float(self.p.get("base_metabolic_cost", 0.0))
+        if base_metabolic_cost > 0.0:
+            for r in self.ruminants:
+                r.energy_internal -= base_metabolic_cost
 
         # 7) Reproduction
         T = self.p["repro_threshold"]

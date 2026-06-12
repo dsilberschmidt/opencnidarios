@@ -29,12 +29,12 @@ def main():
     seed = cfg["seed"]
     random.seed(seed)
 
-    world = World(n=params["N"], e_max=params["E_max"], regen_rate=params["regen_rate"])
+    world = World(n=params["N"], e_max=params["E_max"], regen_rate=params["regen_rate"], cell_energy_hi=cfg["world_energy_hi"])
     world.seed_energy_uniform(cfg["world_energy_lo"], cfg["world_energy_hi"], seed=seed)
 
     adapter_cfg = cfg["adapter"]
     assert adapter_cfg["type"] == "dummy"
-    llm = DummyAdapter(p_action=adapter_cfg["p_action"], seed=seed)
+    llm = DummyAdapter(p_action=adapter_cfg["p_action"], p_hidden=adapter_cfg.get("p_hidden", 0.0), seed=seed)
 
     run_id = f"{cfg['meta']['date']}_{cfg['meta']['name']}"
     logger = Logger(out_dir=cfg["out_dir"], run_id=run_id)

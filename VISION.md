@@ -56,11 +56,31 @@ apoyo de un laboratorio para una segunda fase.
 
 Los organismos viven en un mundo cerrado: un **grid toroidal**, un espacio donde
 moverse, encontrarse y captar energía. Pero su fertilidad es **latente** — la
-energía está ahí, como la luz para una planta, pero aprovecharla exige descubrir
-cómo. Hay que encontrar la fotosíntesis. Quien la encuentra, vive; quien no,
-perece. Ese primer descubrimiento —sobrevivir cuando sobrevivir no era evidente—
-es ya un fenómeno emergente, y se reconoce por su consecuencia más limpia: la
-diferencia entre los que siguen y los que no.
+energía existe, pero aprovecharla exige descubrir cómo. Ninguna fuente es gratis:
+todas hay que encontrarlas.
+
+Hay tres:
+
+**Quimiotrofía.** Nutrientes acumulados en las celdas del grid, finitos y agotables.
+Los primeros organismos de la historia los absorbían por contacto directo con el
+medio: bastaba tocar lo que había. Es la fuente más accesible — la señal está en
+el entorno y la acción es directa. Pero el mundo la regenera lentamente: quien
+sobreexplota una zona termina en un desierto.
+
+**Fotosíntesis.** Energía renovable, siempre disponible, independiente de las celdas.
+En la historia de la vida tardó miles de millones de años en aparecer — fue un
+salto evolutivo, no una continuación. Acá también es difícil: la acción no se
+describe, no se insinúa, hay que encontrarla sola. Quien la descubre accede a una
+fuente que no se agota.
+
+**Depredación.** Eliminar a otro organismo y absorber su energía. Otro salto:
+requiere encontrar, perseguir, atacar — y asumir el riesgo de morir en el intento.
+La fuente más poderosa y la más costosa de descubrir.
+
+Quien encuentra la primera, sobrevive el primer día. Quien encuentra la segunda,
+deja de depender del suelo. Quien encuentra la tercera, cambia la dinámica del
+mundo. Cada descubrimiento es ya un fenómeno emergente, y se reconoce por su
+consecuencia más limpia: la diferencia entre los que siguen y los que no.
 
 El mundo es cerrado, y sus desafíos se resuelven dentro de él: un organismo puede
 aprender a moverse, a captar energía, a comunicarse con otros, a lo que sea — pero
