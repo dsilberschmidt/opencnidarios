@@ -89,13 +89,29 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 
 **`feedback()`, pesos dinámicos y salto de descubrimiento (implementado 2026-06-13):**
 - `LLMAdapter.generate()` recibe `organism_id: str` como primer parámetro.
-- `LLMAdapter.feedback(organism_id, action, energy_delta)` — abstracto; delta es exclusivo del feeding (no incluye costo metabólico).
+- `LLMAdapter.feedback(organism_id, action, energy_delta) -> bool` — retorna True si disparó un discovery jump. Delta es exclusivo del feeding (no incluye costo metabólico).
 - `LLMAdapter.register_child(child_id, parent_id)` — concreto no-op en base; sobreescrito en DummyAdapter para herencia lamarckiana.
+- `LLMAdapter.get_organism_state(organism_id) -> dict` — retorna pesos y discovered para logging. Default `{}`.
 - `DummyAdapter._weights`: pesos iniciales no uniformes: `EAT=100, RS=5, NA/SA/EA/WA/ATTACK/PHOTOSYNTHESIZE=1`. `generate()` usa `random.choices()` ponderado.
 - `DummyAdapter._discovered`: set por organismo. Primera acción exitosa dispara un salto irreversible de peso (`PHOTOSYNTHESIZE→100`, `ATTACK/movimientos→30`). EAT y RS sin salto.
 - Herencia lamarckiana: `register_child()` copia tanto `_weights` como `_discovered`.
 - El engine llama `feedback()` tras el step 6 (feeding) y `register_child()` tras `clone_child()`.
 - Corrida de verificación: sin errores; extinción en tick 136 (problema de balance preexistente, no regresión).
+
+**Logger por evento (implementado 2026-06-13):**
+- `Logger(event_logging=True)` abre `events_{run_id}.jsonl` además del CSV de stats agregadas.
+- `logger.log_event(tick, event_type, organism_id, **payload)` — serializa una línea JSONL.
+- Cuatro tipos de evento:
+
+| evento      | step engine | payload clave                                              |
+|-------------|-------------|------------------------------------------------------------|
+| `movement`  | 5           | `direction`, `origin_x`, `origin_y`, `dest_x`, `dest_y`   |
+| `discovery` | 6           | `action`, `x`, `y`, `weights`, `discovered`                |
+| `birth`     | 7           | `parent_id`, `x`, `y`, `weights`, `discovered`             |
+| `death`     | 9           | `age`, `x`, `y`, `weights`, `discovered`                   |
+
+- Opt-in por config: `"event_logging": true`. Configs sin ese campo no cambian.
+- Validado con corrida de 500 ticks: 165 eventos (43 birth, 48 death, 9 discovery, 65 movement). Primer discovery en tick 3, acción PHOTOSYNTHESIZE.
 
 **Parámetros v02:**
 
@@ -274,9 +290,8 @@ El historial de experimentos queda en git, no en nombres de archivo.
 2. **Rediseñar feedback de movimiento**: si el organismo se mueve a una celda con
    energía disponible, `feedback()` recibe un delta positivo proporcional a la
    energía de la celda destino. El engine debe pasar esta información al adapter.
-3. **Logger por organismo**: registrar acciones emitidas, pesos actuales y
-   `_discovered` set por tick. Necesario para confirmar empíricamente el
-   descubrimiento de PHOTOSYNTHESIZE y diagnosticar el comportamiento emergente.
+3. ~~**Logger por organismo**~~: completado. Logger por evento (JSONL) implementado con
+   4 tipos: birth, death, discovery, movement. Opt-in via `event_logging: true` en config.
 4. **Visualizador del mundo**: película tick a tick — posición de organismos,
    energía por celda, nacimientos, muertes.
 5. **Implementar ATTACK**: acción deliberada que reemplaza la absorción pasiva.
