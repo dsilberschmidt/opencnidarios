@@ -6,3 +6,4 @@ Reglas de trabajo:
 3. Actualizá CONTEXT.md cuando haya cambios de estado importantes.
 4. Chequeá memoria y disco libre al inicio y cada ~30 minutos.
 5. runs/pending_review.md no va commiteado — es canal de comunicación entre sesiones.
+6. Después de cada commit, incluí en runs/pending_review.md el output de git diff HEAD~1 HEAD --stat para verificación.
