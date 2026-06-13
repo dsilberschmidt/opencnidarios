@@ -292,8 +292,10 @@ El historial de experimentos queda en git, no en nombres de archivo.
    energía de la celda destino. El engine debe pasar esta información al adapter.
 3. ~~**Logger por organismo**~~: completado. Logger por evento (JSONL) implementado con
    4 tipos: birth, death, discovery, movement. Opt-in via `event_logging: true` en config.
-4. **Visualizador del mundo**: película tick a tick — posición de organismos,
-   energía por celda, nacimientos, muertes.
+4. ~~**Visualizador del mundo**~~: completado. `src/viewer/viewer.html` — archivo HTML
+   único, sin dependencias. Canvas 32×32, color por peso de PHOTOSYNTHESIZE, overlays
+   por evento (movement trail, birth ring, death ✕, discovery bubble). Controles:
+   play/pause, slider de tick, velocidades. Carga CSV + JSONL via FileReader.
 5. **Implementar ATTACK**: acción deliberada que reemplaza la absorción pasiva.
    El organismo emite ATTACK; el engine resuelve la pelea y transfiere energía.
    La absorción por colisión (step 8 del engine) se elimina.
@@ -308,6 +310,7 @@ El historial de experimentos queda en git, no en nombres de archivo.
 - `src/engine.py` — loop de simulación (observar, generar, parsear, aplicar)
 - `src/ruminant.py` — el organismo
 - `src/llm_adapter/dummy.py` — adapter dummy actual
+- `src/viewer/viewer.html` — visualizador HTML/JS (abre directo en browser)
 - `run.py` — entrypoint
 - `Docs/02_planeta_v1_especificacion.md` — spec del mundo
 - `Docs/04_parameters_v1.md` — parámetros

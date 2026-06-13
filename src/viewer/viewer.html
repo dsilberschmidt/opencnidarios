@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OpenCnidarios Viewer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 16px;
+    color: #58a6ff;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+
+  /* Load panel */
+  #load-panel {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .file-btn {
+    position: relative;
+    cursor: pointer;
+  }
+  .file-btn input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+  }
+  .file-btn span {
+    display: block;
+    padding: 6px 14px;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    background: #161b22;
+    color: #8b949e;
+    transition: border-color 0.2s;
+    white-space: nowrap;
+  }
+  .file-btn.loaded span { border-color: #3fb950; color: #3fb950; }
+  .file-btn:hover span { border-color: #58a6ff; }
+
+  /* Canvas wrapper */
+  #canvas-wrap {
+    position: relative;
+    border: 1px solid #21262d;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  canvas { display: block; }
+
+  /* Stats bar */
+  #stats {
+    display: flex;
+    gap: 24px;
+    margin: 10px 0 6px;
+    color: #8b949e;
+    font-size: 12px;
+  }
+  #stats span { color: #c9d1d9; }
+  #stats .label { color: #8b949e; margin-right: 4px; }
+
+  /* Slider */
+  #slider-wrap {
+    width: 480px;
+    margin: 6px 0;
+  }
+  #tick-slider {
+    width: 100%;
+    accent-color: #58a6ff;
+    cursor: pointer;
+  }
+
+  /* Controls */
+  #controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button {
+    padding: 5px 12px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    color: #c9d1d9;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  button:hover { border-color: #58a6ff; background: #1f2937; }
+  button.active { border-color: #3fb950; color: #3fb950; background: #0d1f12; }
+  button:disabled { opacity: 0.35; cursor: default; }
+
+  .sep { width: 1px; height: 22px; background: #30363d; margin: 0 4px; }
+
+  /* Legend */
+  #legend {
+    margin-top: 14px;
+    display: flex;
+    gap: 20px;
+    font-size: 11px;
+    color: #8b949e;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .legend-line {
+    width: 18px; height: 2px; flex-shrink: 0;
+  }
+
+  #msg {
+    margin-top: 30px;
+    color: #8b949e;
+    text-align: center;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+
+<h1>OpenCnidarios Viewer</h1>
+
+<div id="load-panel">
+  <label class="file-btn" id="btn-csv">
+    <input type="file" accept=".csv" id="input-csv">
+    <span id="label-csv">📄 Load ticks CSV</span>
+  </label>
+  <label class="file-btn" id="btn-jsonl">
+    <input type="file" accept=".jsonl,.json" id="input-jsonl">
+    <span id="label-jsonl">⚡ Load events JSONL</span>
+  </label>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="grid" width="480" height="480"></canvas>
+</div>
+
+<div id="stats">
+  <div><span class="label">tick</span><span id="s-tick">—</span></div>
+  <div><span class="label">pop</span><span id="s-pop">—</span></div>
+  <div><span class="label">e_media</span><span id="s-energy">—</span></div>
+  <div><span class="label">visible</span><span id="s-visible">—</span></div>
+</div>
+
+<div id="slider-wrap">
+  <input type="range" id="tick-slider" min="1" max="1" value="1" disabled>
+</div>
+
+<div id="controls">
+  <button id="btn-prev" disabled>◀</button>
+  <button id="btn-play" disabled>▶ Play</button>
+  <button id="btn-next" disabled>▶</button>
+  <div class="sep"></div>
+  <button id="btn-slow" class="speed-btn" disabled>Lento</button>
+  <button id="btn-normal" class="speed-btn active" disabled>Normal</button>
+  <button id="btn-fast" class="speed-btn" disabled>Rápido</button>
+</div>
+
+<div id="legend">
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#1a3a1a;border:1px solid #3fb950"></div>
+    Organismo (sin PHOTO)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#00ff44"></div>
+    Organismo (PHOTO descubierto)
+  </div>
+  <div class="legend-item">
+    <div class="legend-line" style="background:#4a9966"></div>
+    Movimiento
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:transparent;border:2px solid #58a6ff"></div>
+    Nacimiento
+  </div>
+  <div class="legend-item" style="color:#ff4444">
+    ✕ Muerte
+  </div>
+  <div class="legend-item" style="color:#ffd700">
+    ⚡ Descubrimiento
+  </div>
+</div>
+
+<div id="msg">Cargá el CSV de ticks y el JSONL de eventos para comenzar.</div>
+
+<script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+const CELL = 15;
+const N = 32;
+const ORG_R = 4;
+const SPEEDS = { slow: 500, normal: 150, fast: 30 };
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let tickData = null;    // Map<tick, {population, mean_internal_energy, ...}>
+let eventsByTick = null; // Map<tick, Event[]>
+let timeline = null;    // Array<TickSnapshot> indexed by tick-1
+let maxTick = 1;
+let currentTick = 1;
+let playing = false;
+let speed = 'normal';
+let animTimer = null;
+let csvLoaded = false;
+let jsonlLoaded = false;
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('grid');
+const ctx = canvas.getContext('2d');
+const slider = document.getElementById('tick-slider');
+const sTick = document.getElementById('s-tick');
+const sPop = document.getElementById('s-pop');
+const sEnergy = document.getElementById('s-energy');
+const sVisible = document.getElementById('s-visible');
+const btnPlay = document.getElementById('btn-play');
+const btnPrev = document.getElementById('btn-prev');
+const btnNext = document.getElementById('btn-next');
+const msg = document.getElementById('msg');
+
+// ─── CSV parser ───────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  const map = new Map();
+  for (let i = 1; i < lines.length; i++) {
+    const vals = lines[i].split(',');
+    const row = {};
+    headers.forEach((h, j) => { row[h] = vals[j] ? vals[j].trim() : ''; });
+    map.set(parseInt(row.tick), row);
+  }
+  return map;
+}
+
+// ─── JSONL parser ─────────────────────────────────────────────────────────────
+function parseJSONL(text) {
+  const byTick = new Map();
+  const lines = text.trim().split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const ev = JSON.parse(line);
+    if (!byTick.has(ev.tick)) byTick.set(ev.tick, []);
+    byTick.get(ev.tick).push(ev);
+  }
+  return byTick;
+}
+
+// ─── PHOTOSYNTHESIZE weight → color ──────────────────────────────────────────
+function photoColor(weights) {
+  const w = (weights && weights['PHOTOSYNTHESIZE']) ? weights['PHOTOSYNTHESIZE'] : 1.0;
+  const t = Math.min(1, (w - 1) / 109); // 0 at w=1, 1 at w=110
+  const sat = Math.round(20 + t * 80);
+  const lit = Math.round(15 + t * 45);
+  return `hsl(120,${sat}%,${lit}%)`;
+}
+
+// ─── Timeline builder ─────────────────────────────────────────────────────────
+function buildTimeline() {
+  // orgState: id → { x, y, alive, weights, discovered, death_tick }
+  const orgState = new Map();
+  // effects per tick: { movements: [], births: [], deaths: [], discoveries: [] }
+  const effects = new Map();
+  const snapshots = []; // index = tick - 1
+
+  const allTicks = [...new Set([...tickData.keys(), ...eventsByTick.keys()])].sort((a,b) => a-b);
+  maxTick = Math.max(...tickData.keys());
+
+  for (let t = 1; t <= maxTick; t++) {
+    const evs = eventsByTick.get(t) || [];
+    const ef = { movements: [], births: [], deaths: [], discoveries: [] };
+
+    for (const ev of evs) {
+      if (ev.event === 'birth') {
+        orgState.set(ev.organism_id, {
+          x: ev.x, y: ev.y, alive: true,
+          weights: ev.weights || null,
+          discovered: ev.discovered || [],
+        });
+        ef.births.push({ x: ev.x, y: ev.y });
+      } else if (ev.event === 'movement') {
+        if (!orgState.has(ev.organism_id)) {
+          // Initial organism appearing for the first time
+          orgState.set(ev.organism_id, { x: ev.dest_x, y: ev.dest_y, alive: true, weights: null, discovered: [] });
+        }
+        const org = orgState.get(ev.organism_id);
+        ef.movements.push({ x0: ev.origin_x, y0: ev.origin_y, x1: ev.dest_x, y1: ev.dest_y });
+        org.x = ev.dest_x;
+        org.y = ev.dest_y;
+      } else if (ev.event === 'discovery') {
+        if (!orgState.has(ev.organism_id)) {
+          orgState.set(ev.organism_id, { x: ev.x, y: ev.y, alive: true, weights: ev.weights || null, discovered: ev.discovered || [] });
+        }
+        const org = orgState.get(ev.organism_id);
+        org.x = ev.x; org.y = ev.y;
+        org.weights = ev.weights || org.weights;
+        org.discovered = ev.discovered || org.discovered;
+        ef.discoveries.push({ x: ev.x, y: ev.y, action: ev.action });
+      } else if (ev.event === 'death') {
+        if (!orgState.has(ev.organism_id)) {
+          orgState.set(ev.organism_id, { x: ev.x, y: ev.y, alive: false, weights: ev.weights || null, discovered: ev.discovered || [] });
+        }
+        const org = orgState.get(ev.organism_id);
+        org.x = ev.x; org.y = ev.y;
+        org.alive = false;
+        org.weights = ev.weights || org.weights;
+        org.discovered = ev.discovered || org.discovered;
+        ef.deaths.push({ x: ev.x, y: ev.y });
+      }
+    }
+
+    // Snapshot: deep copy of alive organisms
+    const orgs = [];
+    for (const [id, o] of orgState) {
+      if (o.alive) orgs.push({ id, x: o.x, y: o.y, weights: o.weights, discovered: o.discovered });
+    }
+    snapshots.push({ t, orgs, effects: ef });
+    effects.set(t, ef);
+  }
+
+  return snapshots;
+}
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
+function cellCenter(gx, gy) {
+  return [gx * CELL + CELL / 2, gy * CELL + CELL / 2];
+}
+
+function renderTick(t) {
+  if (!timeline) return;
+  const snap = timeline[t - 1];
+  if (!snap) return;
+
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid lines
+  ctx.strokeStyle = '#1a2030';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= N; i++) {
+    ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, N * CELL); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(N * CELL, i * CELL); ctx.stroke();
+  }
+
+  const ef = snap.effects;
+
+  // Movement trails
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(74,153,102,0.65)';
+  for (const m of ef.movements) {
+    const [x0, y0] = cellCenter(m.x0, m.y0);
+    const [x1, y1] = cellCenter(m.x1, m.y1);
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    // Arrow tip
+    const angle = Math.atan2(y1 - y0, x1 - x0);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - 5 * Math.cos(angle - 0.4), y1 - 5 * Math.sin(angle - 0.4));
+    ctx.lineTo(x1 - 5 * Math.cos(angle + 0.4), y1 - 5 * Math.sin(angle + 0.4));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(74,153,102,0.65)';
+    ctx.fill();
+  }
+
+  // Organisms
+  for (const org of snap.orgs) {
+    const [cx, cy] = cellCenter(org.x, org.y);
+    const color = photoColor(org.weights);
+    ctx.beginPath();
+    ctx.arc(cx, cy, ORG_R, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    // Subtle border
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Birth rings — check current tick and 1 tick prior
+  for (let dt = 0; dt <= 1; dt++) {
+    const bt = t - dt;
+    if (bt < 1) continue;
+    const bsnap = timeline[bt - 1];
+    if (!bsnap) continue;
+    const progress = dt / 2; // 0 at birth tick, 0.5 after 1 tick
+    const radius = ORG_R + progress * 18;
+    const alpha = 0.8 - progress * 0.8;
+    ctx.lineWidth = 1.5;
+    for (const b of bsnap.effects.births) {
+      const [cx, cy] = cellCenter(b.x, b.y);
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(88,166,255,${alpha})`;
+      ctx.stroke();
+    }
+  }
+
+  // Death marks — current tick and 1 tick after
+  for (let dt = 0; dt <= 1; dt++) {
+    const dt2 = t - dt;
+    if (dt2 < 1) continue;
+    const dsnap = timeline[dt2 - 1];
+    if (!dsnap) continue;
+    const alpha = dt === 0 ? 1.0 : 0.5;
+    ctx.strokeStyle = `rgba(255,68,68,${alpha})`;
+    ctx.lineWidth = 2;
+    for (const d of dsnap.effects.deaths) {
+      const [cx, cy] = cellCenter(d.x, d.y);
+      const s = 5;
+      ctx.beginPath(); ctx.moveTo(cx-s, cy-s); ctx.lineTo(cx+s, cy+s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+s, cy-s); ctx.lineTo(cx-s, cy+s); ctx.stroke();
+    }
+  }
+
+  // Discovery bubbles — current tick + 2 more
+  for (let dt = 0; dt <= 2; dt++) {
+    const st = t - dt;
+    if (st < 1) continue;
+    const dsnap = timeline[st - 1];
+    if (!dsnap) continue;
+    const alpha = 1.0 - dt * 0.3;
+    for (const disc of dsnap.effects.discoveries) {
+      const [cx, cy] = cellCenter(disc.x, disc.y);
+      const label = `⚡ ${disc.action}`;
+      ctx.font = 'bold 10px Courier New';
+      const tw = ctx.measureText(label).width;
+      const bx = cx - tw / 2 - 4;
+      const by = cy - 22 - dt * 4;
+      // background
+      ctx.fillStyle = `rgba(30,30,10,${alpha * 0.85})`;
+      roundRect(ctx, bx, by, tw + 8, 16, 3);
+      ctx.fill();
+      // border
+      ctx.strokeStyle = `rgba(255,215,0,${alpha})`;
+      ctx.lineWidth = 1;
+      roundRect(ctx, bx, by, tw + 8, 16, 3);
+      ctx.stroke();
+      // text
+      ctx.fillStyle = `rgba(255,215,0,${alpha})`;
+      ctx.fillText(label, bx + 4, by + 11);
+    }
+  }
+
+  // Stats
+  const csvRow = tickData ? tickData.get(t) : null;
+  sTick.textContent = t;
+  sPop.textContent = csvRow ? csvRow.population : '—';
+  sEnergy.textContent = csvRow ? parseFloat(csvRow.mean_internal_energy).toFixed(2) : '—';
+  sVisible.textContent = snap.orgs.length;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ─── Playback ─────────────────────────────────────────────────────────────────
+function goToTick(t) {
+  currentTick = Math.max(1, Math.min(maxTick, t));
+  slider.value = currentTick;
+  renderTick(currentTick);
+}
+
+function startPlay() {
+  if (playing) return;
+  playing = true;
+  btnPlay.textContent = '⏸ Pause';
+  btnPlay.classList.add('active');
+  scheduleNext();
+}
+
+function pausePlay() {
+  playing = false;
+  btnPlay.textContent = '▶ Play';
+  btnPlay.classList.remove('active');
+  clearTimeout(animTimer);
+}
+
+function scheduleNext() {
+  if (!playing) return;
+  animTimer = setTimeout(() => {
+    if (currentTick >= maxTick) { pausePlay(); return; }
+    goToTick(currentTick + 1);
+    scheduleNext();
+  }, SPEEDS[speed]);
+}
+
+function setSpeed(s) {
+  speed = s;
+  document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + s).classList.add('active');
+}
+
+// ─── Enable controls ──────────────────────────────────────────────────────────
+function enableControls() {
+  slider.disabled = false;
+  slider.max = maxTick;
+  slider.value = 1;
+  [btnPlay, btnPrev, btnNext].forEach(b => b.disabled = false);
+  document.querySelectorAll('.speed-btn').forEach(b => b.disabled = false);
+  msg.style.display = 'none';
+  goToTick(1);
+}
+
+// ─── File loading ─────────────────────────────────────────────────────────────
+function tryInit() {
+  if (!csvLoaded || !jsonlLoaded) return;
+  timeline = buildTimeline();
+  enableControls();
+}
+
+document.getElementById('input-csv').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    tickData = parseCSV(ev.target.result);
+    csvLoaded = true;
+    document.getElementById('label-csv').textContent = '✓ ' + file.name;
+    document.getElementById('btn-csv').classList.add('loaded');
+    tryInit();
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('input-jsonl').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    eventsByTick = parseJSONL(ev.target.result);
+    jsonlLoaded = true;
+    document.getElementById('label-jsonl').textContent = '✓ ' + file.name;
+    document.getElementById('btn-jsonl').classList.add('loaded');
+    tryInit();
+  };
+  reader.readAsText(file);
+});
+
+// ─── Control listeners ────────────────────────────────────────────────────────
+btnPlay.addEventListener('click', () => { playing ? pausePlay() : startPlay(); });
+btnPrev.addEventListener('click', () => { pausePlay(); goToTick(currentTick - 1); });
+btnNext.addEventListener('click', () => { pausePlay(); goToTick(currentTick + 1); });
+slider.addEventListener('input', () => { pausePlay(); goToTick(parseInt(slider.value)); });
+document.getElementById('btn-slow').addEventListener('click', () => setSpeed('slow'));
+document.getElementById('btn-normal').addEventListener('click', () => setSpeed('normal'));
+document.getElementById('btn-fast').addEventListener('click', () => setSpeed('fast'));
+
+// ─── Initial draw ─────────────────────────────────────────────────────────────
+ctx.fillStyle = '#0d1117';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.strokeStyle = '#1a2030';
+ctx.lineWidth = 0.5;
+for (let i = 0; i <= N; i++) {
+  ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,N*CELL); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(N*CELL,i*CELL); ctx.stroke();
+}
+</script>
+</body>
+</html>
