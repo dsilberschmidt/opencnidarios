@@ -91,17 +91,28 @@ class DummyAdapter(LLMAdapter):
         organism_id: str,
         action: Optional[str],
         energy_delta: float,
-    ) -> None:
+    ) -> bool:
         if action not in _NORMAL_ACTIONS or energy_delta <= 0.0:
-            return
+            return False
         weights = self._get_weights(organism_id)
         idx = _NORMAL_ACTIONS.index(action)
         discovered = self._get_discovered(organism_id)
 
+        jumped = False
         # Discovery jump: irreversible, fires once per action per organism.
         if action in _DISCOVERY_JUMP and action not in discovered:
             weights[idx] = max(weights[idx], _DISCOVERY_JUMP[action])
             discovered.add(action)
+            jumped = True
 
         # Gradual reinforcement always applies after the jump.
         weights[idx] += self.learning_rate * energy_delta
+        return jumped
+
+    def get_organism_state(self, organism_id: str) -> dict:
+        weights = self._weights.get(organism_id, list(_INITIAL_WEIGHTS))
+        discovered = list(self._get_discovered(organism_id))
+        return {
+            "weights": dict(zip(_NORMAL_ACTIONS, weights)),
+            "discovered": discovered,
+        }

@@ -108,9 +108,17 @@ class Engine:
                     dx = 1
                 elif a == "WA":
                     dx = -1
+                origin_x, origin_y = r.x, r.y
                 r.x, r.y = self.world.wrap(r.x + dx, r.y + dy)
                 r.energy_internal -= float(move_cost)
                 moves += 1
+                if self.logger is not None:
+                    self.logger.log_event(
+                        self.tick, "movement", r.id,
+                        direction=a,
+                        origin_x=origin_x, origin_y=origin_y,
+                        dest_x=r.x, dest_y=r.y,
+                    )
 
         # 6) Feeding: EAT draws from cell; PHOTOSYNTHESIZE draws from renewable source.
         #    None or any other action: no energy gain.
@@ -128,7 +136,13 @@ class Engine:
             elif a == "PHOTOSYNTHESIZE":
                 feeding_delta = photo_energy
                 r.energy_internal += feeding_delta
-            self.llm.feedback(r.id, a, feeding_delta)
+            discovered = self.llm.feedback(r.id, a, feeding_delta)
+            if discovered and self.logger is not None:
+                state = self.llm.get_organism_state(r.id)
+                self.logger.log_event(
+                    self.tick, "discovery", r.id,
+                    action=a, x=r.x, y=r.y, **state,
+                )
 
         # 6.5) Metabolic drain — after feeding so an organism that eats on its last tick survives.
         base_metabolic_cost = float(self.p.get("base_metabolic_cost", 0.0))
@@ -161,6 +175,12 @@ class Engine:
                 self.llm.register_child(child.id, r.id)
                 new_children.append(child)
                 births += 1
+                if self.logger is not None:
+                    state = self.llm.get_organism_state(child.id)
+                    self.logger.log_event(
+                        self.tick, "birth", child.id,
+                        parent_id=r.id, x=child.x, y=child.y, **state,
+                    )
 
         # Optional population cap
         if "P_max" in self.p and self.p["P_max"] is not None:
@@ -198,6 +218,12 @@ class Engine:
                 alive.append(r)
             else:
                 deaths += 1
+                if self.logger is not None:
+                    state = self.llm.get_organism_state(r.id)
+                    self.logger.log_event(
+                        self.tick, "death", r.id,
+                        age=r.age, x=r.x, y=r.y, **state,
+                    )
         self.ruminants = alive
 
         # 10) Regenerate world

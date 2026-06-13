@@ -37,9 +37,15 @@ class LLMAdapter(ABC):
         organism_id: str,
         action: Optional[str],
         energy_delta: float,
-    ) -> None:
-        """Reinforce action based on feeding energy delta. delta > 0 = gain."""
+    ) -> bool:
+        """Reinforce action based on feeding energy delta. delta > 0 = gain.
+        Returns True if a discovery jump fired this call."""
         raise NotImplementedError
 
     def register_child(self, child_id: str, parent_id: str) -> None:
         """Hook for weight inheritance at birth. No-op by default."""
+
+    def get_organism_state(self, organism_id: str) -> dict:
+        """Return current adapter state for an organism (weights, discovered, etc.).
+        Used for event logging. Returns empty dict for adapters without per-organism state."""
+        return {}

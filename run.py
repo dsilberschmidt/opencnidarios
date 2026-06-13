@@ -37,7 +37,7 @@ def main():
     llm = DummyAdapter(p_action=adapter_cfg["p_action"], seed=seed)
 
     run_id = f"{cfg['meta']['date']}_{cfg['meta']['name']}"
-    logger = Logger(out_dir=cfg["out_dir"], run_id=run_id)
+    logger = Logger(out_dir=cfg["out_dir"], run_id=run_id, event_logging=cfg.get("event_logging", False))
 
     engine = Engine(world=world, llm_adapter=llm, params=params, logger=logger)
 
