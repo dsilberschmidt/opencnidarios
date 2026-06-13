@@ -292,10 +292,11 @@ El historial de experimentos queda en git, no en nombres de archivo.
    energía de la celda destino. El engine debe pasar esta información al adapter.
 3. ~~**Logger por organismo**~~: completado. Logger por evento (JSONL) implementado con
    4 tipos: birth, death, discovery, movement. Opt-in via `event_logging: true` en config.
-4. ~~**Visualizador del mundo**~~: completado. `src/viewer/viewer.html` — archivo HTML
-   único, sin dependencias. Canvas 32×32, color por peso de PHOTOSYNTHESIZE, overlays
-   por evento (movement trail, birth ring, death ✕, discovery bubble). Controles:
+4. ~~**Visualizador del mundo**~~: completado y validado visualmente. `src/viewer/viewer.html`
+   — archivo HTML único, sin dependencias. Canvas 32×32, color por peso de PHOTOSYNTHESIZE,
+   overlays por evento (movement trail, birth ring, death ✕, discovery bubble). Controles:
    play/pause, slider de tick, velocidades. Carga CSV + JSONL via FileReader.
+   Datos de prueba: `runs/tmp_validation/` (500 ticks, event_logging=true).
 5. **Implementar ATTACK**: acción deliberada que reemplaza la absorción pasiva.
    El organismo emite ATTACK; el engine resuelve la pelea y transfiere energía.
    La absorción por colisión (step 8 del engine) se elimina.
