@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "name": "v04c_logged",
+    "description": "Identical to v04_small_grid_no_regen but with event_logging enabled. First long run with the event logger active — produces JSONL for full visualization in the viewer.",
+    "date": "2026-06-13"
+  },
+  "seed": 42,
+  "ticks": 10000,
+  "out_dir": "runs/2026-06-13_v04c_logged",
+  "constitution": "You are a ruminant. Survive.",
+  "memory": "",
+  "adapter": {
+    "type": "dummy",
+    "p_action": 0.5
+  },
+  "world_energy_lo": 5,
+  "world_energy_hi": 20,
+  "event_logging": true,
+  "params": {
+    "N": 32,
+    "e_max_internal": 100,
+    "regen_rate": 0,
+    "P0": 20,
+    "e_i0": 25,
+    "max_tokens": 50,
+    "token_cost": 0.05,
+    "move_cost": 0.5,
+    "feed_cap": 6,
+    "feed_eff": 1.0,
+    "base_metabolic_cost": 0.4,
+    "photo_energy": 4.0,
+    "repro_threshold": 60,
+    "repro_cost": 4,
+    "child_e0": 10,
+    "absorb_ratio": 1.5,
+    "absorb_frac": 0.30,
+    "P_max": 1000
+  }
+}
