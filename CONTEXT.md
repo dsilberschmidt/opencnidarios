@@ -21,7 +21,7 @@ genuina dentro de su contexto, en lugar de seguir instrucciones explícitas.
 
 ---
 
-## Estado actual (al 2026-04-30 — diagnóstico recalculado 2026-06-11)
+## Estado actual (al 2026-04-30 — actualizado 2026-06-13)
 
 **Primera simulación completada — smoke test con DummyAdapter v0.1.**
 
@@ -120,6 +120,8 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 | v02 + feedback | v02 | 500 | extinción tick 142 |
 | v02 p_action=0.5 | v02 | 10000 | supervivencia completa |
 | v02 regen_rate=0 | v02 | 10000 | supervivencia completa |
+| v04 | v04 | 10000 | supervivencia completa, pop 20→244 |
+| v04b_long_run | v04b | 100000 | supervivencia completa, pop converge ~440 |
 
 **Run p_action=0.5, 10000 ticks** (`runs/2026-06-13_p_action_0.5_10000ticks/`):
 Población sobrevivió los 10.000 ticks. Creció de 20 a ~93, alcanzó cap P_max=100.
@@ -143,6 +145,59 @@ Población llegó a 110 al tick 10.000, muy por debajo del cap de 1000. Grid 128
 (16.384 celdas) es demasiado grande para la población actual: los organismos quedan
 dispersos y cell_cap=5 nunca se activó. La presión espacial no mordió.
 Energía media al tick 10.000: ~8.556. Acumulación sin meseta persiste.
+
+### Run v04_small_grid_no_regen (2026-06-13)
+
+Config: `runs/configs/v04_small_grid_no_regen.json` — N=32, regen_rate=0, repro_cost=4,
+e_max_internal=100, P_max=1000.
+
+Cambios de diseño respecto a v03:
+- `e_max_internal=100` implementado en engine (step 6.6): clamp de `energy_internal`
+  después del metabolismo. `E_max` era un parámetro muerto; reemplazado por este.
+- `run.py`: fix `KeyError` al leer `E_max` — ahora usa `.get("E_max", world_energy_hi)`.
+- `regen_rate=0`: sin regeneración, PHOTOSYNTHESIZE es la única fuente renovable.
+- `repro_cost`: 20 → 4, para permitir crecimiento poblacional bajo restricción energética.
+
+Resultados (10.000 ticks):
+
+| tick  | pop | energía media |
+|-------|-----|---------------|
+|     1 |  20 |         26.65 |
+|  1000 |  23 |         94.54 |
+|  3000 |  82 |         96.51 |
+|  6000 | 166 |         94.38 |
+| 10000 | 244 |         94.14 |
+
+Energía satura en ~94-96 desde tick 1000: `e_max_internal` funciona, acumulación
+descontrolada eliminada. Arranque lento (20→23 en los primeros 1000 ticks): probable
+die-off mientras se agotan las celdas, seguido de crecimiento sostenido vía
+PHOTOSYNTHESIZE (evidencia indirecta; requiere logger para confirmar).
+
+### Run v04b_long_run (2026-06-13)
+
+Config: `runs/configs/v04b_long_run.json` — idéntico a v04, ticks=100000.
+Output: `runs/2026-06-13_v04b_long_run/`
+
+Propósito: ver si la población alcanza densidad suficiente para que ATTACK tenga
+sentido ecológico.
+
+Resultados (100.000 ticks):
+
+| tick   | pop | energía media |
+|--------|-----|---------------|
+|      1 |  20 |         26.65 |
+|  10000 | 244 |         94.14 |
+|  25000 | 359 |         96.08 |
+|  50000 | 404 |         97.92 |
+|  75000 | 427 |         98.35 |
+| 100000 | 439 |         99.11 |
+
+La población crece pero desacelera marcadamente y converge en torno a ~440,
+muy por debajo de P_max=1000. Densidad al tick 100k: 439/1024 ≈ 0.43 org/celda.
+ATTACK tiene sentido mecánico pero el impacto ecológico sería moderado a esta
+densidad. El equilibrio lo determinan la dinámica interna (repro_cost, absorción
+pasiva, metabolismo), no el cap poblacional. Energía media satura en ~99,
+confirmando PHOTOSYNTHESIZE como fuente dominante de toda la población.
 
 ### Problema identificado: feedback de movimiento no funciona
 
@@ -214,9 +269,8 @@ El historial de experimentos queda en git, no en nombres de archivo.
 
 ## Próximos pasos (en orden) — actualizado 2026-06-13
 
-1. **Config v04**: grid 32×32, `e_max_internal=100`, `repro_cost=4`, `regen_rate=0`.
-   Volver al grid pequeño para maximizar la presión espacial y simplificar la
-   calibración antes de escalar.
+1. ~~**Config v04**~~: completado. v04 y v04b corridos. `e_max_internal` implementado.
+   Población converge a ~440/1024 celdas (0.43 org/celda) a los 100k ticks.
 2. **Rediseñar feedback de movimiento**: si el organismo se mueve a una celda con
    energía disponible, `feedback()` recibe un delta positivo proporcional a la
    energía de la celda destino. El engine debe pasar esta información al adapter.
