@@ -9,6 +9,7 @@ Spec references:
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
@@ -139,11 +140,14 @@ class Engine:
         T = self.p["repro_threshold"]
         repro_cost = self.p["repro_cost"]
         child_e0 = self.p["child_e0"]
+        cell_cap = self.p.get("cell_cap")
+        cell_counts = Counter((r.x, r.y) for r in self.ruminants) if cell_cap is not None else None
         new_children: List[Any] = []
         for idx, r in enumerate(self.ruminants):
             a = outputs[idx]["action"]
             if a == "RS" and r.energy_internal >= float(T):
-                # cheap reproduction
+                if cell_counts is not None and cell_counts[(r.x, r.y)] >= int(cell_cap):
+                    continue
                 r.energy_internal -= float(repro_cost)
                 child = r.clone_child(child_e0=child_e0)
                 self.llm.register_child(child.id, r.id)

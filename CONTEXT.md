@@ -157,6 +157,15 @@ cap de energía más agresivo.
 
 ## Decisiones de arquitectura tomadas
 
+### Regla de versionado de configs (adoptada en v03)
+
+v02 acumuló múltiples cambios de diseño sin generar un config nuevo (pesos no
+uniformes, salto de descubrimiento, experimentos con regen_rate=0 y p_action=0.5).
+A partir de v03, cada cambio de diseño significativo genera un archivo de config
+nuevo. El config anterior queda como registro histórico. Los experimentos puntuales
+(como regen_rate=0) se archivan en `runs/` pero no generan un config versionado a
+menos que sean adoptados como base.
+
 ### Configuración separada del código
 Para evitar el antipatrón `run_v1.py`, `run_v2.py`, etc., los parámetros van
 en archivos de config (JSON), no hardcodeados en `run.py`. Un solo `run.py`
