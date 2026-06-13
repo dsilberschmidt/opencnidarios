@@ -85,15 +85,17 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 
 **`cell_energy_hi` en `World`:** cap de celda separado del cap de organismo (`E_max`). `regenerate()` clampea a `world_energy_hi`.
 
-**DummyAdapter:** split `p_action` (acciones descritas: EAT, MOVE, RS) / `p_hidden` (PHOTOSYNTHESIZE).
+**DummyAdapter:** pool unificado con pesos iniciales no uniformes. `p_action` = probabilidad de emitir cualquier acción. PHOTOSYNTHESIZE y ATTACK están en el pool desde el inicio con peso bajo — deben descubrirse vía feedback.
 
-**`feedback()` y pesos dinámicos por organismo (implementado 2026-06-13):**
+**`feedback()`, pesos dinámicos y salto de descubrimiento (implementado 2026-06-13):**
 - `LLMAdapter.generate()` recibe `organism_id: str` como primer parámetro.
 - `LLMAdapter.feedback(organism_id, action, energy_delta)` — abstracto; delta es exclusivo del feeding (no incluye costo metabólico).
-- `LLMAdapter.register_child(child_id, parent_id)` — concreto no-op en base; sobreescrito en DummyAdapter para herencia lamarckiana de pesos.
-- `DummyAdapter` mantiene `_weights: Dict[str, list[float]]` por organismo. `generate()` usa `random.choices()` ponderado. Reinforcement positivo puro: `weight[action] += learning_rate * delta`.
+- `LLMAdapter.register_child(child_id, parent_id)` — concreto no-op en base; sobreescrito en DummyAdapter para herencia lamarckiana.
+- `DummyAdapter._weights`: pesos iniciales no uniformes: `EAT=100, RS=5, NA/SA/EA/WA/ATTACK/PHOTOSYNTHESIZE=1`. `generate()` usa `random.choices()` ponderado.
+- `DummyAdapter._discovered`: set por organismo. Primera acción exitosa dispara un salto irreversible de peso (`PHOTOSYNTHESIZE→100`, `ATTACK/movimientos→30`). EAT y RS sin salto.
+- Herencia lamarckiana: `register_child()` copia tanto `_weights` como `_discovered`.
 - El engine llama `feedback()` tras el step 6 (feeding) y `register_child()` tras `clone_child()`.
-- Corrida de verificación: sin errores; extinción en tick 142 (problema de balance preexistente, no regresión).
+- Corrida de verificación: sin errores; extinción en tick 136 (problema de balance preexistente, no regresión).
 
 **Parámetros v02:**
 
@@ -108,7 +110,7 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 | `e_i0` | 20 | 25 |
 | `E_max` | 50 | 100 |
 | `p_action` (DummyAdapter) | 0.02 | 0.05 |
-| `p_hidden` (DummyAdapter) | ausente | 0.01 |
+| `p_hidden` (DummyAdapter) | ausente | eliminado (pool unificado) |
 
 ### Pendiente (balance)
 
