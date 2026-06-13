@@ -5,13 +5,13 @@
     "date": "2026-06-12"
   },
   "seed": 42,
-  "ticks": 1000,
+  "ticks": 10000,
   "out_dir": "runs/latest",
   "constitution": "You are a ruminant. Survive.",
   "memory": "",
   "adapter": {
     "type": "dummy",
-    "p_action": 0.05
+    "p_action": 0.5
   },
   "world_energy_lo": 5,
   "world_energy_hi": 20,
