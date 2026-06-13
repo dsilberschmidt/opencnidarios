@@ -136,11 +136,21 @@ PHOTOSYNTHESIZE fue descubierto y propagado vía herencia lamarckiana**: los
 organismos que lo descubrieron sobrevivieron el die-off y transmitieron el peso
 saltado (100) a su descendencia. Requiere logging de pesos para confirmación directa.
 
-### Pendiente (balance)
+### Run v03_spatial_pressure (2026-06-13)
 
-Con p_action=0.5 el balance es positivo y la ecología es viable. La acumulación
-de energía sin meseta persiste — pendiente de resolver con drenaje adicional o
-cap de energía más agresivo.
+Config: `runs/configs/v03_spatial_pressure.json` — N=128, P_max=1000, cell_cap=5.
+Población llegó a 110 al tick 10.000, muy por debajo del cap de 1000. Grid 128×128
+(16.384 celdas) es demasiado grande para la población actual: los organismos quedan
+dispersos y cell_cap=5 nunca se activó. La presión espacial no mordió.
+Energía media al tick 10.000: ~8.556. Acumulación sin meseta persiste.
+
+### Problema identificado: feedback de movimiento no funciona
+
+`feedback()` mide únicamente el delta inmediato de energía del feeding. Moverse
+no produce `energy_delta` directo, por lo que el salto de descubrimiento de
+movimiento (NA/SA/EA/WA → 30) nunca dispara. El beneficio del movimiento es
+indirecto (llegar a una celda con más energía) pero el contrato actual de
+`feedback()` no captura esa causalidad diferida. Requiere rediseño.
 
 ### Reglas del mundo v02
 
@@ -202,16 +212,23 @@ El historial de experimentos queda en git, no en nombres de archivo.
 
 ---
 
-## Próximos pasos (en orden)
+## Próximos pasos (en orden) — actualizado 2026-06-13
 
-1. **Calibrar balance v02** ← próximo paso: fix del desbalance EAT/metabolic para evitar
-   extinción con DummyAdapter.
-2. ~~**Agregar `feedback()`** al adapter~~ — **completado 2026-06-13.**
-3. ~~**Pesos dinámicos por organismo**~~ — **completado junto con feedback().**
-4. **Implementar ATTACK**: acción deliberada que reemplaza la absorción pasiva.
+1. **Config v04**: grid 32×32, `e_max_internal=100`, `repro_cost=4`, `regen_rate=0`.
+   Volver al grid pequeño para maximizar la presión espacial y simplificar la
+   calibración antes de escalar.
+2. **Rediseñar feedback de movimiento**: si el organismo se mueve a una celda con
+   energía disponible, `feedback()` recibe un delta positivo proporcional a la
+   energía de la celda destino. El engine debe pasar esta información al adapter.
+3. **Logger por organismo**: registrar acciones emitidas, pesos actuales y
+   `_discovered` set por tick. Necesario para confirmar empíricamente el
+   descubrimiento de PHOTOSYNTHESIZE y diagnosticar el comportamiento emergente.
+4. **Visualizador del mundo**: película tick a tick — posición de organismos,
+   energía por celda, nacimientos, muertes.
+5. **Implementar ATTACK**: acción deliberada que reemplaza la absorción pasiva.
    El organismo emite ATTACK; el engine resuelve la pelea y transfiere energía.
-   La absorción por colisión (step 8) se elimina.
-5. **Reemplazar DummyAdapter** por adapter de LLM real cuando la ecología tenga
+   La absorción por colisión (step 8 del engine) se elimina.
+6. **Reemplazar DummyAdapter** por adapter de LLM real cuando la ecología tenga
    dinámicas estables.
 
 ---
