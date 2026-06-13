@@ -73,3 +73,33 @@ Fecha: 2026-06-13
 ## Estado
 
 Commiteado y pusheado. Branch al día.
+
+---
+
+# Run v04b_long_run
+
+Config: `runs/configs/v04b_long_run.json`
+Output: `runs/2026-06-13_v04b_long_run/`
+Branch: `experiment/v02-two-energy-sources`
+Fecha: 2026-06-13
+
+Parámetros clave: idéntico a v04 salvo ticks=100000.
+Propósito: ver si la población llega a densidad suficiente para que ATTACK tenga sentido ecológico.
+
+## Resultados
+
+| tick   | población | energía media |
+|--------|-----------|---------------|
+|      1 |        20 |         26.65 |
+|  10000 |       244 |         94.14 |
+|  25000 |       359 |         96.08 |
+|  50000 |       404 |         97.92 |
+|  75000 |       427 |         98.35 |
+| 100000 |       439 |         99.11 |
+
+## Observaciones
+
+- Población crece pero desacelera marcadamente: la curva se aplana hacia ~440-460, muy por debajo de P_max=1000. No hay señal de que llegue al cap en este régimen.
+- Densidad al tick 100k: 439/1024 ≈ **0.43 organismos/celda**. ATTACK tiene sentido mecánico pero el impacto ecológico sería moderado con esta densidad.
+- Energía media satura en ~99 al tick 100k, confirmando que `e_max_internal=100` funciona y que PHOTOSYNTHESIZE es la fuente dominante de toda la población.
+- El equilibrio poblacional parece estar determinado por el balance entre `repro_cost=4`, `repro_threshold=60`, `base_metabolic_cost=0.4` y la absorción pasiva por colisión — no por P_max ni por escasez de PHOTOSYNTHESIZE.
