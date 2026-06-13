@@ -112,13 +112,35 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 | `p_action` (DummyAdapter) | 0.02 | 0.05 |
 | `p_hidden` (DummyAdapter) | ausente | eliminado (pool unificado) |
 
+### Corridas realizadas en esta branch
+
+| run | config base | ticks | resultado |
+|---|---|---|---|
+| v02 smoke (pre-feedback) | v02 | 500 | extinción tick 100 |
+| v02 + feedback | v02 | 500 | extinción tick 142 |
+| v02 p_action=0.5 | v02 | 10000 | supervivencia completa |
+| v02 regen_rate=0 | v02 | 10000 | supervivencia completa |
+
+**Run p_action=0.5, 10000 ticks** (`runs/2026-06-13_p_action_0.5_10000ticks/`):
+Población sobrevivió los 10.000 ticks. Creció de 20 a ~93, alcanzó cap P_max=100.
+Energía media creció de ~27 a ~10.611 (~1 u/tick lineal sostenida, sin meseta).
+Misma dinámica de acumulación que v01, pero con población estable. PHOTOSYNTHESIZE
+no confirmable sin logging de acciones.
+
+**Run regen_rate=0, 10000 ticks** (`runs/2026-06-13_regen_rate_0/`):
+Población sobrevivió los 10.000 ticks sin regeneración del mundo. Die-off en tick
+~200 cuando las celdas se agotaron; recuperación sostenida y crecimiento hasta ~93.
+Con cero regeneración, la única fuente de energía disponible tras el agotamiento es
+PHOTOSYNTHESIZE. Energía creció a ~8.843 al tick 10.000. **Evidencia fuerte de que
+PHOTOSYNTHESIZE fue descubierto y propagado vía herencia lamarckiana**: los
+organismos que lo descubrieron sobrevivieron el die-off y transmitieron el peso
+saltado (100) a su descendencia. Requiere logging de pesos para confirmación directa.
+
 ### Pendiente (balance)
 
-Primera corrida v02: extinción en tick 100 (antes de implementar `feedback()`).
-Segunda corrida (con `feedback()` activo): extinción en tick 142. Misma causa raíz:
-`EAT` es 1 de 6 acciones en `_NORMAL_ACTIONS` → se emite el 0.83% de los ticks,
-no el 5% asumido en el diseño. Balance real: −0.38 u/tick.
-Fix pendiente: bajar `base_metabolic_cost` o darle a `EAT` su propia probabilidad.
+Con p_action=0.5 el balance es positivo y la ecología es viable. La acumulación
+de energía sin meseta persiste — pendiente de resolver con drenaje adicional o
+cap de energía más agresivo.
 
 ### Reglas del mundo v02
 
