@@ -87,6 +87,14 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 
 **DummyAdapter:** split `p_action` (acciones descritas: EAT, MOVE, RS) / `p_hidden` (PHOTOSYNTHESIZE).
 
+**`feedback()` y pesos dinámicos por organismo (implementado 2026-06-13):**
+- `LLMAdapter.generate()` recibe `organism_id: str` como primer parámetro.
+- `LLMAdapter.feedback(organism_id, action, energy_delta)` — abstracto; delta es exclusivo del feeding (no incluye costo metabólico).
+- `LLMAdapter.register_child(child_id, parent_id)` — concreto no-op en base; sobreescrito en DummyAdapter para herencia lamarckiana de pesos.
+- `DummyAdapter` mantiene `_weights: Dict[str, list[float]]` por organismo. `generate()` usa `random.choices()` ponderado. Reinforcement positivo puro: `weight[action] += learning_rate * delta`.
+- El engine llama `feedback()` tras el step 6 (feeding) y `register_child()` tras `clone_child()`.
+- Corrida de verificación: sin errores; extinción en tick 142 (problema de balance preexistente, no regresión).
+
 **Parámetros v02:**
 
 | parámetro | v01 | v02 |
@@ -102,17 +110,13 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 | `p_action` (DummyAdapter) | 0.02 | 0.05 |
 | `p_hidden` (DummyAdapter) | ausente | 0.01 |
 
-### Pendiente (balance y pesos)
+### Pendiente (balance)
 
-Primera corrida v02: extinción en tick 100. Causa: `EAT` es 1 de 6 acciones en
-`_NORMAL_ACTIONS` → se emite el 0.83% de los ticks, no el 5% asumido en el diseño.
-Balance real: −0.38 u/tick. Fix pendiente: bajar `base_metabolic_cost` o darle a
-`EAT` su propia probabilidad.
-
-El pool del DummyAdapter usa **pesos uniformes** (`random.choice` sin pesos) —
-todas las acciones del espacio normal tienen la misma probabilidad. Los pesos
-dinámicos por organismo ajustados con `feedback()` son el próximo paso 3; no
-están implementados.
+Primera corrida v02: extinción en tick 100 (antes de implementar `feedback()`).
+Segunda corrida (con `feedback()` activo): extinción en tick 142. Misma causa raíz:
+`EAT` es 1 de 6 acciones en `_NORMAL_ACTIONS` → se emite el 0.83% de los ticks,
+no el 5% asumido en el diseño. Balance real: −0.38 u/tick.
+Fix pendiente: bajar `base_metabolic_cost` o darle a `EAT` su propia probabilidad.
 
 ### Reglas del mundo v02
 
@@ -167,15 +171,10 @@ El historial de experimentos queda en git, no en nombres de archivo.
 
 ## Próximos pasos (en orden)
 
-1. **Calibrar balance v02**: fix del desbalance EAT/metabolic para evitar
+1. **Calibrar balance v02** ← próximo paso: fix del desbalance EAT/metabolic para evitar
    extinción con DummyAdapter.
-2. **Agregar `feedback()`** al adapter:
-   - Método abstracto en `src/llm_adapter/base.py`
-   - Implementado en `DummyAdapter`: acumula señales positivas/negativas por organismo
-   - Llamado desde `engine.py` después de aplicar cada acción (el engine conoce el delta de energía)
-3. **Pesos dinámicos por organismo**: cada organismo mantiene su propio pool de
-   pesos sobre las acciones (inicialmente uniforme); `feedback()` los ajusta con
-   refuerzo positivo. Permite que los organismos aprendan sin ser LLMs reales.
+2. ~~**Agregar `feedback()`** al adapter~~ — **completado 2026-06-13.**
+3. ~~**Pesos dinámicos por organismo**~~ — **completado junto con feedback().**
 4. **Implementar ATTACK**: acción deliberada que reemplaza la absorción pasiva.
    El organismo emite ATTACK; el engine resuelve la pelea y transfiere energía.
    La absorción por colisión (step 8) se elimina.

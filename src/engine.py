@@ -73,6 +73,7 @@ class Engine:
         for idx, r in enumerate(self.ruminants):
             obs = self._build_observation(r)
             out_text, out_tokens = self.llm.generate(
+                organism_id=r.id,
                 constitution=r.constitution_text,
                 memory=r.memory_text,
                 observation=obs,
@@ -112,16 +113,21 @@ class Engine:
 
         # 6) Feeding: EAT draws from cell; PHOTOSYNTHESIZE draws from renewable source.
         #    None or any other action: no energy gain.
+        #    feeding_delta is reported to the adapter (exclusive of metabolic cost).
         feed_cap = self.p["feed_cap"]
         feed_eff = self.p["feed_eff"]
         photo_energy = float(self.p.get("photo_energy", 0.0))
         for idx, r in enumerate(self.ruminants):
             a = outputs[idx]["action"]
+            feeding_delta = 0.0
             if a == "EAT":
                 taken = self.world.take_energy(r.x, r.y, feed_cap)
-                r.energy_internal += float(taken) * float(feed_eff)
+                feeding_delta = float(taken) * float(feed_eff)
+                r.energy_internal += feeding_delta
             elif a == "PHOTOSYNTHESIZE":
-                r.energy_internal += photo_energy
+                feeding_delta = photo_energy
+                r.energy_internal += feeding_delta
+            self.llm.feedback(r.id, a, feeding_delta)
 
         # 6.5) Metabolic drain — after feeding so an organism that eats on its last tick survives.
         base_metabolic_cost = float(self.p.get("base_metabolic_cost", 0.0))
@@ -140,6 +146,7 @@ class Engine:
                 # cheap reproduction
                 r.energy_internal -= float(repro_cost)
                 child = r.clone_child(child_e0=child_e0)
+                self.llm.register_child(child.id, r.id)
                 new_children.append(child)
                 births += 1
 
