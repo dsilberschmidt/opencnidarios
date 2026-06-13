@@ -136,6 +136,14 @@ class Engine:
             for r in self.ruminants:
                 r.energy_internal -= base_metabolic_cost
 
+        # 6.6) Internal energy cap — prevents unbounded accumulation.
+        e_max_internal = self.p.get("e_max_internal")
+        if e_max_internal is not None:
+            cap = float(e_max_internal)
+            for r in self.ruminants:
+                if r.energy_internal > cap:
+                    r.energy_internal = cap
+
         # 7) Reproduction
         T = self.p["repro_threshold"]
         repro_cost = self.p["repro_cost"]

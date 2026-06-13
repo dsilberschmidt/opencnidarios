@@ -29,7 +29,7 @@ def main():
     seed = cfg["seed"]
     random.seed(seed)
 
-    world = World(n=params["N"], e_max=params["E_max"], regen_rate=params["regen_rate"], cell_energy_hi=cfg["world_energy_hi"])
+    world = World(n=params["N"], e_max=params.get("E_max", cfg["world_energy_hi"]), regen_rate=params["regen_rate"], cell_energy_hi=cfg["world_energy_hi"])
     world.seed_energy_uniform(cfg["world_energy_lo"], cfg["world_energy_hi"], seed=seed)
 
     adapter_cfg = cfg["adapter"]
