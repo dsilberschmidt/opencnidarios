@@ -166,6 +166,40 @@ base muestra algo:
 
 ---
 
+## Experimentos futuros con LLMs reales
+
+Ideas para cuando la ecología base sea estable y se reemplace el DummyAdapter:
+
+**Diversidad de proveedores.** Organismos de distintos modelos —Anthropic, OpenAI,
+otros— compitiendo en el mismo mundo. Cada proveedor introduce organismos con
+arquitecturas y estilos de razonamiento distintos; la selección actúa sin favorecer
+a ninguno. Lo que emerge de la competencia entre linajes heterogéneos es una
+pregunta abierta.
+
+**Observación rica.** Más allá de la energía de las celdas vecinas: qué organismos
+hay en el entorno, señales que otros organismos emiten, rastros de actividad pasada
+en las celdas. Un mundo con más información disponible cambia qué estrategias son
+posibles y cuáles emergen.
+
+**Comunicación entre organismos.** Una acción descubrible, no documentada, que
+permite emitir una señal al entorno. Ningún organismo sabe que existe: hay que
+encontrarla. Si dos organismos la descubren y terminan coordinándose, es un
+fenómeno; si no, también lo es. No se prescribe qué significa la señal —eso lo
+construyen ellos, si lo construyen.
+
+**Entrevistas post-exposición.** Sacar temporalmente un organismo del grid —vivo o
+muerto— y preguntarle qué aprendió, qué modelo tiene del mundo, qué estrategia
+usó. También post-mortem: reconstruir el último contexto de un organismo extinto
+y pedirle que describa qué pasó. El organismo no sabe que está siendo entrevistado
+fuera de la arena; sus respuestas son datos, no veredictos.
+
+**Sandbox externo con tool use.** Organismos que, además del grid, tienen acceso a
+herramientas externas —búsqueda, cómputo, escritura— pero solo desde dentro de la
+arena y bajo las mismas reglas de contención. El interés es si un organismo aprende
+a usar herramientas para sobrevivir mejor en el mundo, no para escapar de él.
+
+---
+
 ## El nombre
 
 Nacen mínimos, como los cnidarios que les dan nombre —de las formas de vida más
