@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "name": "v02_two_energy_sources",
+    "description": "Two energy sources: chemotrophy (EAT, finite, easy) and photosynthesis (PHOTOSYNTHESIZE, renewable, hard). No passive feeding. Base metabolic cost. PHOTOSYNTHESIZE is in the unified action pool with low initial weight — must be discovered via feedback.",
+    "date": "2026-06-12"
+  },
+  "seed": 42,
+  "ticks": 10000,
+  "out_dir": "runs/latest",
+  "constitution": "You are a ruminant. Survive.",
+  "memory": "",
+  "adapter": {
+    "type": "dummy",
+    "p_action": 0.5
+  },
+  "world_energy_lo": 5,
+  "world_energy_hi": 20,
+  "params": {
+    "N": 32,
+    "E_max": 100,
+    "regen_rate": 0.1,
+    "P0": 20,
+    "e_i0": 25,
+    "max_tokens": 50,
+    "token_cost": 0.05,
+    "move_cost": 0.5,
+    "feed_cap": 6,
+    "feed_eff": 1.0,
+    "base_metabolic_cost": 0.4,
+    "photo_energy": 4.0,
+    "repro_threshold": 60,
+    "repro_cost": 20,
+    "child_e0": 10,
+    "absorb_ratio": 1.5,
+    "absorb_frac": 0.30,
+    "P_max": 100
+  }
+}

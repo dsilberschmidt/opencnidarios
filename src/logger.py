@@ -2,7 +2,7 @@
 
 Writes:
 - per-tick aggregates to CSV
-- optional event stream to JSONL (placeholder)
+- optional event stream to JSONL (birth, death, discovery, movement)
 
 This is intentionally minimal.
 """
@@ -11,12 +11,18 @@ from __future__ import annotations
 
 from dataclasses import asdict
 import csv
+import json
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 
 class Logger:
-    def __init__(self, out_dir: str = "runs/latest", run_id: str | None = None):
+    def __init__(
+        self,
+        out_dir: str = "runs/latest",
+        run_id: str | None = None,
+        event_logging: bool = False,
+    ):
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -24,6 +30,11 @@ class Logger:
         self.csv_path = self.out_dir / filename
         self._csv_file = self.csv_path.open("w", newline="", encoding="utf-8")
         self._csv = None
+
+        self._jsonl_file = None
+        if event_logging:
+            ev_filename = f"events_{run_id}.jsonl" if run_id else "events.jsonl"
+            self._jsonl_file = (self.out_dir / ev_filename).open("w", encoding="utf-8")
 
     def log_tick(self, tick_stats) -> None:
         row = asdict(tick_stats)
@@ -33,6 +44,22 @@ class Logger:
         self._csv.writerow(row)
         self._csv_file.flush()
 
+    def log_event(
+        self,
+        tick: int,
+        event_type: str,
+        organism_id: str,
+        **payload: Any,
+    ) -> None:
+        if self._jsonl_file is None:
+            return
+        record = {"tick": tick, "event": event_type, "organism_id": organism_id}
+        record.update(payload)
+        self._jsonl_file.write(json.dumps(record) + "\n")
+        self._jsonl_file.flush()
+
     def close(self) -> None:
         if self._csv_file:
             self._csv_file.close()
+        if self._jsonl_file:
+            self._jsonl_file.close()

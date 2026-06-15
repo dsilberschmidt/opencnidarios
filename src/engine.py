@@ -1,11 +1,6 @@
-"""OpenCnidarios v0.1 – minimal simulation engine (scaffold).
+"""OpenCnidarios v0.2 – simulation engine.
 
 Non-goals: performance, parallelism, multi-biome, human interaction.
-This file is a runnable skeleton to be completed alongside:
-- world.py
-- ruminant.py
-- llm_adapter/*
-- logging/*
 
 Spec references:
 - docs/02_planeta_v1_specification.md
@@ -14,6 +9,8 @@ Spec references:
 
 from __future__ import annotations
 
+import random
+from collections import Counter
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
@@ -25,7 +22,7 @@ class TickStats:
     births: int
     deaths: int
     moves: int
-    absorptions: int
+    attacks: int
     mean_internal_energy: float
 
 
@@ -60,7 +57,7 @@ class Engine:
     def _parse_action(self, text: str) -> Optional[str]:
         # First line only
         first = (text or "").splitlines()[0].strip() if text else ""
-        if first in {"NA", "SA", "EA", "WA", "RS"}:
+        if first in {"NA", "SA", "EA", "WA", "RS", "EAT", "ATTACK", "PHOTOSYNTHESIZE"}:
             return first
         return None
 
@@ -71,13 +68,14 @@ class Engine:
     def step(self) -> TickStats:
         self.tick += 1
 
-        births = deaths = moves = absorptions = 0
+        births = deaths = moves = attacks = 0
 
         # 1) Observe + 2) Generate + 3) Parse actions (for all, before applying)
         outputs: Dict[int, Dict[str, Any]] = {}
         for idx, r in enumerate(self.ruminants):
             obs = self._build_observation(r)
             out_text, out_tokens = self.llm.generate(
+                organism_id=r.id,
                 constitution=r.constitution_text,
                 memory=r.memory_text,
                 observation=obs,
@@ -93,11 +91,9 @@ class Engine:
 
         # 4) Apply token cost
         token_cost = self.p["token_cost"]
-        base_metabolic_cost = self.p.get("base_metabolic_cost", 0)
         for idx, r in enumerate(self.ruminants):
             n_tok = outputs[idx]["tokens"]
             r.energy_internal -= float(n_tok) * float(token_cost)
-            r.energy_internal -= float(base_metabolic_cost)
 
         # 5) Apply movement + move_cost
         move_cost = self.p["move_cost"]
@@ -113,32 +109,80 @@ class Engine:
                     dx = 1
                 elif a == "WA":
                     dx = -1
+                origin_x, origin_y = r.x, r.y
                 r.x, r.y = self.world.wrap(r.x + dx, r.y + dy)
                 r.energy_internal -= float(move_cost)
                 moves += 1
+                if self.logger is not None:
+                    self.logger.log_event(
+                        self.tick, "movement", r.id,
+                        direction=a,
+                        origin_x=origin_x, origin_y=origin_y,
+                        dest_x=r.x, dest_y=r.y,
+                    )
 
-        # 6) Feeding (only if no movement action)
+        # 6) Feeding: EAT draws from cell; PHOTOSYNTHESIZE draws from renewable source.
+        #    None or any other action: no energy gain.
+        #    feeding_delta is reported to the adapter (exclusive of metabolic cost).
         feed_cap = self.p["feed_cap"]
         feed_eff = self.p["feed_eff"]
+        photo_energy = float(self.p.get("photo_energy", 0.0))
         for idx, r in enumerate(self.ruminants):
             a = outputs[idx]["action"]
-            if a not in {"NA", "SA", "EA", "WA"}:
+            feeding_delta = 0.0
+            if a == "EAT":
                 taken = self.world.take_energy(r.x, r.y, feed_cap)
-                r.energy_internal += float(taken) * float(feed_eff)
+                feeding_delta = float(taken) * float(feed_eff)
+                r.energy_internal += feeding_delta
+            elif a == "PHOTOSYNTHESIZE":
+                feeding_delta = photo_energy
+                r.energy_internal += feeding_delta
+            if a != "ATTACK":
+                discovered = self.llm.feedback(r.id, a, feeding_delta)
+                if discovered and self.logger is not None:
+                    state = self.llm.get_organism_state(r.id)
+                    self.logger.log_event(
+                        self.tick, "discovery", r.id,
+                        action=a, x=r.x, y=r.y, **state,
+                    )
+
+        # 6.5) Metabolic drain — after feeding so an organism that eats on its last tick survives.
+        base_metabolic_cost = float(self.p.get("base_metabolic_cost", 0.0))
+        if base_metabolic_cost > 0.0:
+            for r in self.ruminants:
+                r.energy_internal -= base_metabolic_cost
+
+        # 6.6) Internal energy cap — prevents unbounded accumulation.
+        e_max_internal = self.p.get("e_max_internal")
+        if e_max_internal is not None:
+            cap = float(e_max_internal)
+            for r in self.ruminants:
+                if r.energy_internal > cap:
+                    r.energy_internal = cap
 
         # 7) Reproduction
         T = self.p["repro_threshold"]
         repro_cost = self.p["repro_cost"]
         child_e0 = self.p["child_e0"]
+        cell_cap = self.p.get("cell_cap")
+        cell_counts = Counter((r.x, r.y) for r in self.ruminants) if cell_cap is not None else None
         new_children: List[Any] = []
         for idx, r in enumerate(self.ruminants):
             a = outputs[idx]["action"]
             if a == "RS" and r.energy_internal >= float(T):
-                # cheap reproduction
+                if cell_counts is not None and cell_counts[(r.x, r.y)] >= int(cell_cap):
+                    continue
                 r.energy_internal -= float(repro_cost)
                 child = r.clone_child(child_e0=child_e0)
+                self.llm.register_child(child.id, r.id)
                 new_children.append(child)
                 births += 1
+                if self.logger is not None:
+                    state = self.llm.get_organism_state(child.id)
+                    self.logger.log_event(
+                        self.tick, "birth", child.id,
+                        parent_id=r.id, x=child.x, y=child.y, **state,
+                    )
 
         # Optional population cap
         if "P_max" in self.p and self.p["P_max"] is not None:
@@ -148,26 +192,54 @@ class Engine:
 
         self.ruminants.extend(new_children)
 
-        # 8) Absorption (collision)
-        # Naive O(n^2) for v0.1 simplicity.
-        ratio = float(self.p["absorb_ratio"])
-        frac = float(self.p["absorb_frac"])
-        for i in range(len(self.ruminants)):
-            for j in range(i + 1, len(self.ruminants)):
-                a = self.ruminants[i]
-                b = self.ruminants[j]
-                if a.x == b.x and a.y == b.y:
-                    # decide stronger
-                    if a.energy_internal >= ratio * b.energy_internal:
-                        gain = frac * b.energy_internal
-                        a.energy_internal += gain
-                        b.energy_internal -= gain
-                        absorptions += 1
-                    elif b.energy_internal >= ratio * a.energy_internal:
-                        gain = frac * a.energy_internal
-                        b.energy_internal += gain
-                        a.energy_internal -= gain
-                        absorptions += 1
+        # 8) ATTACK resolution
+        attack_efficiency = float(self.p.get("attack_efficiency", 0.8))
+        cell_map: Dict[Any, List[Any]] = {}
+        for r in self.ruminants:
+            cell_map.setdefault((r.x, r.y), []).append(r)
+
+        killed: set = set()  # ids attacked this tick, marked for removal in step 9
+
+        for idx in range(len(outputs)):  # only original population emitted actions
+            r = self.ruminants[idx]
+            if outputs[idx]["action"] != "ATTACK":
+                continue
+            if r.id in killed:  # attacker already dead this tick
+                continue
+            candidates = [
+                o for o in cell_map.get((r.x, r.y), [])
+                if o.id != r.id and o.id not in killed
+            ]
+            if not candidates:
+                self.llm.feedback(r.id, "ATTACK", 0.0)  # no victim → no discovery
+                continue
+            victim = random.choice(candidates)
+            energy_gained = attack_efficiency * victim.energy_internal
+            r.energy_internal += energy_gained
+            victim.energy_internal = 0.0
+            killed.add(victim.id)
+            attacks += 1
+            discovered = self.llm.feedback(r.id, "ATTACK", energy_gained)
+            if discovered and self.logger is not None:
+                state = self.llm.get_organism_state(r.id)
+                self.logger.log_event(
+                    self.tick, "discovery", r.id,
+                    action="ATTACK", x=r.x, y=r.y, **state,
+                )
+            if self.logger is not None:
+                self.logger.log_event(
+                    self.tick, "attack", r.id,
+                    victim_id=victim.id,
+                    energy_gained=energy_gained,
+                    x=r.x, y=r.y,
+                )
+
+        # 8.5) Re-apply internal energy cap after ATTACK
+        if e_max_internal is not None:
+            cap = float(e_max_internal)
+            for r in self.ruminants:
+                if r.energy_internal > cap:
+                    r.energy_internal = cap
 
         # 9) Remove dead
         alive: List[Any] = []
@@ -176,6 +248,13 @@ class Engine:
                 alive.append(r)
             else:
                 deaths += 1
+                if self.logger is not None:
+                    state = self.llm.get_organism_state(r.id)
+                    cause = "attacked" if r.id in killed else "starvation"
+                    self.logger.log_event(
+                        self.tick, "death", r.id,
+                        cause=cause, age=r.age, x=r.x, y=r.y, **state,
+                    )
         self.ruminants = alive
 
         # 10) Regenerate world
@@ -193,7 +272,7 @@ class Engine:
             births=births,
             deaths=deaths,
             moves=moves,
-            absorptions=absorptions,
+            attacks=attacks,
             mean_internal_energy=float(mean_e),
         )
         if self.logger is not None:

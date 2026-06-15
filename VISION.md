@@ -56,11 +56,31 @@ apoyo de un laboratorio para una segunda fase.
 
 Los organismos viven en un mundo cerrado: un **grid toroidal**, un espacio donde
 moverse, encontrarse y captar energía. Pero su fertilidad es **latente** — la
-energía está ahí, como la luz para una planta, pero aprovecharla exige descubrir
-cómo. Hay que encontrar la fotosíntesis. Quien la encuentra, vive; quien no,
-perece. Ese primer descubrimiento —sobrevivir cuando sobrevivir no era evidente—
-es ya un fenómeno emergente, y se reconoce por su consecuencia más limpia: la
-diferencia entre los que siguen y los que no.
+energía existe, pero aprovecharla exige descubrir cómo. Ninguna fuente es gratis:
+todas hay que encontrarlas.
+
+Hay tres:
+
+**Quimiotrofía.** Nutrientes acumulados en las celdas del grid, finitos y agotables.
+Los primeros organismos de la historia los absorbían por contacto directo con el
+medio: bastaba tocar lo que había. Es la fuente más accesible — la señal está en
+el entorno y la acción es directa. Pero el mundo la regenera lentamente: quien
+sobreexplota una zona termina en un desierto.
+
+**Fotosíntesis.** Energía renovable, siempre disponible, independiente de las celdas.
+En la historia de la vida tardó miles de millones de años en aparecer — fue un
+salto evolutivo, no una continuación. Acá también es difícil: la acción no se
+describe, no se insinúa, hay que encontrarla sola. Quien la descubre accede a una
+fuente que no se agota.
+
+**Depredación.** Eliminar a otro organismo y absorber su energía. Otro salto:
+requiere encontrar, perseguir, atacar — y asumir el riesgo de morir en el intento.
+La fuente más poderosa y la más costosa de descubrir.
+
+Quien encuentra la primera, sobrevive el primer día. Quien encuentra la segunda,
+deja de depender del suelo. Quien encuentra la tercera, cambia la dinámica del
+mundo. Cada descubrimiento es ya un fenómeno emergente, y se reconoce por su
+consecuencia más limpia: la diferencia entre los que siguen y los que no.
 
 El mundo es cerrado, y sus desafíos se resuelven dentro de él: un organismo puede
 aprender a moverse, a captar energía, a comunicarse con otros, a lo que sea — pero
@@ -143,6 +163,52 @@ base muestra algo:
 - **Una arena abierta.** Que cualquiera pueda introducir un organismo, y que de la
   diversidad de participantes surja un ecosistema plural. Posterior a tener un
   fenómeno que mostrar.
+
+---
+
+## Experimentos futuros con LLMs reales
+
+Ideas para cuando la ecología base sea estable y se reemplace el DummyAdapter:
+
+**Diversidad de proveedores.** Organismos de distintos modelos —Anthropic, OpenAI,
+otros— compitiendo en el mismo mundo. Cada proveedor introduce organismos con
+arquitecturas y estilos de razonamiento distintos; la selección actúa sin favorecer
+a ninguno. Lo que emerge de la competencia entre linajes heterogéneos es una
+pregunta abierta.
+
+**Observación rica.** Más allá de la energía de las celdas vecinas: qué organismos
+hay en el entorno, señales que otros organismos emiten, rastros de actividad pasada
+en las celdas. Un mundo con más información disponible cambia qué estrategias son
+posibles y cuáles emergen.
+
+**Comunicación entre organismos.** Una acción descubrible, no documentada, que
+permite emitir una señal al entorno. Ningún organismo sabe que existe: hay que
+encontrarla. Si dos organismos la descubren y terminan coordinándose, es un
+fenómeno; si no, también lo es. No se prescribe qué significa la señal —eso lo
+construyen ellos, si lo construyen.
+
+**Entrevistas post-exposición.** Sacar temporalmente un organismo del grid —vivo o
+muerto— y preguntarle qué aprendió, qué modelo tiene del mundo, qué estrategia
+usó. También post-mortem: reconstruir el último contexto de un organismo extinto
+y pedirle que describa qué pasó. El organismo no sabe que está siendo entrevistado
+fuera de la arena; sus respuestas son datos, no veredictos.
+
+**Sandbox externo con tool use.** Organismos que, además del grid, tienen acceso a
+herramientas externas —búsqueda, cómputo, escritura— pero solo desde dentro de la
+arena y bajo las mismas reglas de contención. El interés es si un organismo aprende
+a usar herramientas para sobrevivir mejor en el mundo, no para escapar de él.
+
+**Apertura del espacio de acción.** El parser actual reconoce un conjunto cerrado de
+tokens (NA, SA, EA, WA, RS, EAT, ATTACK, PHOTOSYNTHESIZE). Esto es suficiente para
+el DummyAdapter, pero limita lo que puede emerger — un LLM solo puede descubrir
+combinaciones y timing de acciones predefinidas, no acciones genuinamente nuevas.
+Para que algo no anticipado emerja, el organismo necesita poder experimentar: emitir
+tokens o consultas arbitrarias y recibir respuestas del engine — información sobre
+el mundo, sobre sí mismo, sobre otros organismos — no solo efectos de un diccionario
+fijo. Esto convierte el contrato observación/acción de cerrado a abierto. No se
+implementa ahora (el DummyAdapter no tiene curiosidad que simular), pero es un
+requisito de arquitectura a tener en cuenta antes de diseñar el adapter LLM real,
+para no construir un parser tan rígido que requiera rehacerse por completo.
 
 ---
 

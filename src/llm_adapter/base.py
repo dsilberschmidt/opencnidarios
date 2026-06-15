@@ -1,11 +1,13 @@
 """LLM adapter interface for OpenCnidarios.
 
-The engine calls a single method per ruminant per tick.
-This adapter abstracts away local vs API models.
+The engine calls generate() once per ruminant per tick, then feedback() after
+the energy outcome of that action is resolved.
 
 Contract:
-- Input: constitution, memory, observation, max_tokens
-- Output: (text, token_count)
+- generate: Input: organism_id, constitution, memory, observation, max_tokens
+             Output: (text, token_count)
+- feedback: Input: organism_id, action taken (or None), energy_delta from feeding only
+             Output: None (side-effect on adapter internal state)
 
 The adapter must enforce max token generation.
 """
@@ -13,13 +15,14 @@ The adapter must enforce max token generation.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Optional, Tuple
 
 
 class LLMAdapter(ABC):
     @abstractmethod
     def generate(
         self,
+        organism_id: str,
         constitution: str,
         memory: str,
         observation: Dict[str, Any],
@@ -27,3 +30,22 @@ class LLMAdapter(ABC):
     ) -> Tuple[str, int]:
         """Return (output_text, tokens_generated)."""
         raise NotImplementedError
+
+    @abstractmethod
+    def feedback(
+        self,
+        organism_id: str,
+        action: Optional[str],
+        energy_delta: float,
+    ) -> bool:
+        """Reinforce action based on feeding energy delta. delta > 0 = gain.
+        Returns True if a discovery jump fired this call."""
+        raise NotImplementedError
+
+    def register_child(self, child_id: str, parent_id: str) -> None:
+        """Hook for weight inheritance at birth. No-op by default."""
+
+    def get_organism_state(self, organism_id: str) -> dict:
+        """Return current adapter state for an organism (weights, discovered, etc.).
+        Used for event logging. Returns empty dict for adapters without per-organism state."""
+        return {}
