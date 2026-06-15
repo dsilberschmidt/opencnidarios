@@ -57,7 +57,7 @@ class Engine:
     def _parse_action(self, text: str) -> Optional[str]:
         # First line only
         first = (text or "").splitlines()[0].strip() if text else ""
-        if first in {"NA", "SA", "EA", "WA", "RS", "EAT", "PHOTOSYNTHESIZE"}:
+        if first in {"NA", "SA", "EA", "WA", "RS", "EAT", "ATTACK", "PHOTOSYNTHESIZE"}:
             return first
         return None
 
@@ -200,7 +200,8 @@ class Engine:
 
         killed: set = set()  # ids attacked this tick, marked for removal in step 9
 
-        for idx, r in enumerate(self.ruminants):
+        for idx in range(len(outputs)):  # only original population emitted actions
+            r = self.ruminants[idx]
             if outputs[idx]["action"] != "ATTACK":
                 continue
             if r.id in killed:  # attacker already dead this tick

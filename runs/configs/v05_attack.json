@@ -13,6 +13,7 @@
     "type": "dummy",
     "p_action": 0.5
   },
+  "event_logging": true,
   "world_energy_lo": 5,
   "world_energy_hi": 20,
   "params": {
