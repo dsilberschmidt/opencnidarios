@@ -5,7 +5,11 @@ Fecha: 2026-06-15
 
 ## git log --oneline -3
 
-(pendiente — se actualiza post-commit)
+```
+c34144b fix: engine — ATTACK parsing and step 8 index bounds; enable event_logging in v05_attack
+2f507e7 docs: pending_review.md — log y diff del commit ATTACK
+2bee255 feat: engine — implement ATTACK action, remove passive absorption (step 8)
+```
 
 ## git diff HEAD~1 HEAD
 
