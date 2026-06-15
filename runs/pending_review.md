@@ -5,7 +5,11 @@ Fecha: 2026-06-15
 
 ## git log --oneline -3
 
-(pendiente — se actualiza post-commit)
+```
+2bee255 feat: engine — implement ATTACK action, remove passive absorption (step 8)
+83d4e86 docs: VISION.md — nota de diseño: apertura del espacio de acción para LLMs reales
+8ef8a45 docs: VISION.md — add future experiments section (LLMs reales)
+```
 
 ## git diff HEAD~1 HEAD
 
