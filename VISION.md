@@ -198,6 +198,18 @@ herramientas externas —búsqueda, cómputo, escritura— pero solo desde dentr
 arena y bajo las mismas reglas de contención. El interés es si un organismo aprende
 a usar herramientas para sobrevivir mejor en el mundo, no para escapar de él.
 
+**Apertura del espacio de acción.** El parser actual reconoce un conjunto cerrado de
+tokens (NA, SA, EA, WA, RS, EAT, ATTACK, PHOTOSYNTHESIZE). Esto es suficiente para
+el DummyAdapter, pero limita lo que puede emerger — un LLM solo puede descubrir
+combinaciones y timing de acciones predefinidas, no acciones genuinamente nuevas.
+Para que algo no anticipado emerja, el organismo necesita poder experimentar: emitir
+tokens o consultas arbitrarias y recibir respuestas del engine — información sobre
+el mundo, sobre sí mismo, sobre otros organismos — no solo efectos de un diccionario
+fijo. Esto convierte el contrato observación/acción de cerrado a abierto. No se
+implementa ahora (el DummyAdapter no tiene curiosidad que simular), pero es un
+requisito de arquitectura a tener en cuenta antes de diseñar el adapter LLM real,
+para no construir un parser tan rígido que requiera rehacerse por completo.
+
 ---
 
 ## El nombre
