@@ -21,7 +21,7 @@ genuina dentro de su contexto, en lugar de seguir instrucciones explícitas.
 
 ---
 
-## Estado actual (al 2026-04-30 — actualizado 2026-06-13)
+## Estado actual (al 2026-04-30 — actualizado 2026-06-15)
 
 **Primera simulación completada — smoke test con DummyAdapter v0.1.**
 
@@ -101,15 +101,17 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 **Logger por evento (implementado 2026-06-13):**
 - `Logger(event_logging=True)` abre `events_{run_id}.jsonl` además del CSV de stats agregadas.
 - `logger.log_event(tick, event_type, organism_id, **payload)` — serializa una línea JSONL.
-- Cuatro tipos de evento:
+- Cinco tipos de evento (cuatro originales + `attack` agregado en v05):
 
 | evento      | step engine | payload clave                                              |
 |-------------|-------------|------------------------------------------------------------|
 | `movement`  | 5           | `direction`, `origin_x`, `origin_y`, `dest_x`, `dest_y`   |
-| `discovery` | 6           | `action`, `x`, `y`, `weights`, `discovered`                |
+| `discovery` | 6 / 8       | `action`, `x`, `y`, `weights`, `discovered`                |
 | `birth`     | 7           | `parent_id`, `x`, `y`, `weights`, `discovered`             |
-| `death`     | 9           | `age`, `x`, `y`, `weights`, `discovered`                   |
+| `attack`    | 8           | `victim_id`, `energy_gained`, `x`, `y`                     |
+| `death`     | 9           | `cause`, `age`, `x`, `y`, `weights`, `discovered`          |
 
+- `death` incluye `cause`: `"starvation"` (energy ≤ 0 por metabolismo) o `"attacked"` (víctima de ATTACK ese tick).
 - Opt-in por config: `"event_logging": true`. Configs sin ese campo no cambian.
 - Validado con corrida de 500 ticks: 165 eventos (43 birth, 48 death, 9 discovery, 65 movement). Primer discovery en tick 3, acción PHOTOSYNTHESIZE.
 
@@ -138,6 +140,7 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 | v02 regen_rate=0 | v02 | 10000 | supervivencia completa |
 | v04 | v04 | 10000 | supervivencia completa, pop 20→244 |
 | v04b_long_run | v04b | 100000 | supervivencia completa, pop converge ~440 |
+| v05_attack | v05 | 10000 | supervivencia completa, pop estabiliza ~244, 99.9% muertes por ataque |
 
 **Run p_action=0.5, 10000 ticks** (`runs/2026-06-13_p_action_0.5_10000ticks/`):
 Población sobrevivió los 10.000 ticks. Creció de 20 a ~93, alcanzó cap P_max=100.
@@ -215,6 +218,54 @@ densidad. El equilibrio lo determinan la dinámica interna (repro_cost, absorci�
 pasiva, metabolismo), no el cap poblacional. Energía media satura en ~99,
 confirmando PHOTOSYNTHESIZE como fuente dominante de toda la población.
 
+### Run v05_attack (2026-06-15)
+
+Config: `runs/configs/v05_attack.json` — idéntico a v04b salvo `ticks=10000`,
+`attack_efficiency=0.8`, sin `absorb_ratio`/`absorb_frac`, `event_logging=true`.
+Output: `runs/2026-06-15_v05_attack/`
+
+**ATTACK implementado (step 8 reemplazado):**
+- La absorción pasiva por colisión (el O(n²) de `absorb_ratio`/`absorb_frac`) fue eliminada.
+- El organismo emite `ATTACK` explícitamente; el engine construye un `cell_map` por celda y resuelve la acción en step 8.
+- Si hay organismos en la misma celda: el atacante elige una víctima al azar (excluyendo a sí mismo y a víctimas ya matadas ese tick), setea `victim.energy_internal = 0.0`, gana `attack_efficiency * victim.energy_internal`.
+- Si no hay nadie: `feedback(r.id, "ATTACK", 0.0)` — sin efecto, sin discovery.
+- `feedback()` y el discovery jump (ATTACK → peso 30) funcionan igual que EAT/PHOTOSYNTHESIZE.
+- `TickStats.absorptions` renombrado a `attacks`.
+- Step 8.5: re-aplica `e_max_internal` cap tras ATTACK (el atacante puede exceder el cap al absorber energía de la víctima).
+- Step 6: guarda `if a != "ATTACK":` antes de `feedback()` — ATTACK no recibe call espurio con delta=0 desde feeding; solo lo recibe desde step 8.
+
+**Bugs corregidos en implementación inicial:**
+
+*Bug 1 — ATTACK nunca parseado* (`src/engine.py`, `_parse_action`):
+"ATTACK" no estaba en el set de tokens válidos del parser. El DummyAdapter lo emitía
+pero el engine lo descartaba como `None`. Consecuencia en la primera corrida (bug activo):
+0 eventos "attack", 0 muertes por depredación, población llegó a P_max=1000.
+Fix: agregar "ATTACK" al set en `_parse_action()`. Commit: `c34144b`.
+
+*Bug 2 — KeyError en step 8 por hijos nuevos* (`src/engine.py`, step 8):
+Step 7 agrega hijos a `self.ruminants` antes de step 8. La iteración original
+`enumerate(self.ruminants)` generaba índices fuera del rango de `outputs` (que solo
+tiene entradas para la población original del tick) → `KeyError`.
+Fix: `for idx in range(len(outputs)):` — itera solo los organismos que emitieron acciones. Commit: `c34144b`.
+
+**Resultados (10.000 ticks):**
+
+| tick  | pop | energía media |
+|-------|-----|---------------|
+|     1 |  20 |         26.65 |
+|  1000 | 120 |         85.12 |
+|  5000 | 250 |         96.24 |
+| 10000 | 244 |         97.08 |
+
+Eventos: 5.493 attack, 5.724 birth, 5.500 death, 475 discovery, 4.985 movement.
+Muertes: 5.493 por "attacked" (99.9%), 7 por "starvation" (0.1%).
+
+**ATTACK actúa como regulador poblacional real.** La población se estabiliza en ~244,
+muy por debajo de P_max=1000. En v04b (sin ATTACK) convergía a ~440 contenida por
+escasez de PHOTOSYNTHESIZE; aquí ATTACK equilibra births (5.724) y deaths (5.500) en
+torno a ~244-250. Energía satura en ~97 igual que v04b — `e_max_internal` sigue
+funcionando.
+
 ### Problema identificado: feedback de movimiento no funciona
 
 `feedback()` mide únicamente el delta inmediato de energía del feeding. Moverse
@@ -229,10 +280,9 @@ indirecto (llegar a una celda con más energía) pero el contrato actual de
 - **Tres fuentes de energía** (ninguna gratis, todas hay que descubrirlas):
   1. **EAT** — quimiotrofía: fácil (acción descrita), finita
   2. **PHOTOSYNTHESIZE** — fotosíntesis: difícil (acción oculta), renovable
-  3. **ATTACK** — depredación: no implementada aún; reemplazará la absorción
-     pasiva por colisión (step 8 del engine actual)
-- Absorción pasiva por colisión: **aún activa** en el engine; se eliminará cuando
-  se implemente ATTACK deliberado
+  3. **ATTACK** — depredación: acción explícita, víctima al azar en la misma celda;
+     atacante gana `attack_efficiency=0.8` de la energía de la víctima; víctima muere
+- Absorción pasiva por colisión: **eliminada** (step 8 reemplazado por ATTACK deliberado)
 
 ---
 
@@ -283,7 +333,7 @@ El historial de experimentos queda en git, no en nombres de archivo.
 
 ---
 
-## Próximos pasos (en orden) — actualizado 2026-06-13
+## Próximos pasos (en orden) — actualizado 2026-06-15
 
 1. ~~**Config v04**~~: completado. v04 y v04b corridos. `e_max_internal` implementado.
    Población converge a ~440/1024 celdas (0.43 org/celda) a los 100k ticks.
@@ -291,17 +341,22 @@ El historial de experimentos queda en git, no en nombres de archivo.
    energía disponible, `feedback()` recibe un delta positivo proporcional a la
    energía de la celda destino. El engine debe pasar esta información al adapter.
 3. ~~**Logger por organismo**~~: completado. Logger por evento (JSONL) implementado con
-   4 tipos: birth, death, discovery, movement. Opt-in via `event_logging: true` en config.
+   5 tipos: birth, death (con causa), discovery, movement, attack. Opt-in via `event_logging: true`.
 4. ~~**Visualizador del mundo**~~: completado y validado visualmente. `src/viewer/viewer.html`
    — archivo HTML único, sin dependencias. Canvas 32×32, color por peso de PHOTOSYNTHESIZE,
    overlays por evento (movement trail, birth ring, death ✕, discovery bubble). Controles:
    play/pause, slider de tick, velocidades. Carga CSV + JSONL via FileReader.
    Datos de prueba: `runs/tmp_validation/` (500 ticks, event_logging=true).
-5. **Implementar ATTACK**: acción deliberada que reemplaza la absorción pasiva.
-   El organismo emite ATTACK; el engine resuelve la pelea y transfiere energía.
-   La absorción por colisión (step 8 del engine) se elimina.
-6. **Reemplazar DummyAdapter** por adapter de LLM real cuando la ecología tenga
-   dinámicas estables.
+5. ~~**Implementar ATTACK**~~: completado (2026-06-15). Absorción pasiva eliminada; ATTACK
+   deliberado activo. Validado en v05_attack: 5.493 ataques, 99.9% muertes por depredación,
+   población estabiliza ~244 (regulador real, no P_max). Commit: `2bee255` + `c34144b`.
+6. **Adapter LLM real — población mixta**: introducir unos pocos organismos LLM reales
+   (e.g. Claude Haiku) conviviendo con dummies. Diseño: un adapter que admita múltiples
+   proveedores por organismo; los LLMs reales compiten bajo las mismas reglas de selección
+   que los dummies. Primer experimento: ¿sobreviven más tiempo? ¿descubren PHOTOSYNTHESIZE
+   o ATTACK antes? Diversidad de proveedores (Anthropic, OpenAI u otros) como extensión
+   natural. Las entrevistas post-exposición (sacar un organismo del grid y preguntarle qué
+   aprendió) son una herramienta de análisis a habilitar desde esta fase.
 
 ---
 
