@@ -1,105 +1,203 @@
-# Confirmación: CONTEXT.md actualizado y pusheado
+# Commit: feat: engine — implement ATTACK action, remove passive absorption
 
-Commit: e92774e
 Branch: experiment/v02-two-energy-sources
-Fecha: 2026-06-13
+Fecha: 2026-06-15
 
-## Qué se actualizó
+## git log --oneline -3
 
-### 1. Run v03_spatial_pressure
-Población llegó a 110 al tick 10.000, muy por debajo de P_max=1000. Grid 128×128
-demasiado grande: cell_cap=5 no se activó. Energía media ~8.556, acumulación sin
-meseta persiste.
+(pendiente — se actualiza post-commit)
 
-### 2. Problema identificado: feedback de movimiento
-feedback() mide solo delta inmediato de feeding. Movimiento no produce energy_delta
-directo → salto de descubrimiento para NA/SA/EA/WA nunca dispara. El beneficio del
-movimiento es indirecto (celda destino con energía) pero el contrato actual no lo
-captura.
+## git diff HEAD~1 HEAD
 
-### 3. Próximos pasos reemplazados
-1. Config v04: 32×32, e_max_internal=100, repro_cost=4, regen_rate=0.
-2. Rediseñar feedback de movimiento: delta proporcional a energía de celda destino.
-3. Logger por organismo: acciones, pesos, discovered por tick.
-4. Visualizador del mundo: película tick a tick.
-5. Implementar ATTACK.
-6. Reemplazar DummyAdapter por LLM real.
-
-## Estado
-CONTEXT.md commiteado y pusheado. Branch al día.
-
----
-
-# Run v04_small_grid_no_regen
-
-Config: `runs/configs/v04_small_grid_no_regen.json`
-Branch: `experiment/v02-two-energy-sources`
-Fecha: 2026-06-13
-
-Parámetros clave: N=32, regen_rate=0, repro_cost=4, e_max_internal=100, P_max=1000, p_action=0.5
-
-## Resultados
-
-| tick  | población | energía media |
-|-------|-----------|---------------|
-|     1 |        20 |         26.65 |
-|  1000 |        23 |         94.54 |
-|  3000 |        82 |         96.51 |
-|  6000 |       166 |         94.38 |
-| 10000 |       244 |         94.14 |
-
-## Observaciones
-
-- **`e_max_internal` funciona**: la energía media satura cerca de 94-96 a partir del tick 1000. La acumulación descontrolada que afectó a v01-v03 está controlada.
-- **Supervivencia completa**: sin extinción en 10.000 ticks.
-- **Crecimiento poblacional sostenido**: 20 → 244, bien por debajo de P_max=1000. `repro_cost=4` permite crecer bajo restricción energética real.
-- **Crecimiento lento al inicio**: de tick 1 a tick 1000 la población apenas sube (20→23). Probable die-off inicial mientras las celdas se agotan y los organismos que no descubrieron PHOTOSYNTHESIZE mueren, seguido de recuperación y crecimiento desde tick ~1000 en adelante.
-- **PHOTOSYNTHESIZE**: con `regen_rate=0` es la única fuente renovable. El crecimiento sostenido después del die-off inicial es evidencia indirecta de descubrimiento, igual que en el run `regen_rate=0` anterior. Requiere logger por organismo para confirmación directa.
-
----
-
-# Commit v04
-
-Branch: `experiment/v02-two-energy-sources`
-Fecha: 2026-06-13
-
-## Archivos commiteados
-
-- `runs/configs/v04_small_grid_no_regen.json` — config nueva
-- `src/engine.py` — step 6.6: clamp `energy_internal` a `e_max_internal`
-- `run.py` — fix `KeyError: 'E_max'` para configs sin ese campo
-- `runs/pending_review.md` — este archivo
-
-## Estado
-
-Commiteado y pusheado. Branch al día.
-
----
-
-# Run v04b_long_run
-
-Config: `runs/configs/v04b_long_run.json`
-Output: `runs/2026-06-13_v04b_long_run/`
-Branch: `experiment/v02-two-energy-sources`
-Fecha: 2026-06-13
-
-Parámetros clave: idéntico a v04 salvo ticks=100000.
-Propósito: ver si la población llega a densidad suficiente para que ATTACK tenga sentido ecológico.
-
-## Resultados
-
-| tick   | población | energía media |
-|--------|-----------|---------------|
-|      1 |        20 |         26.65 |
-|  10000 |       244 |         94.14 |
-|  25000 |       359 |         96.08 |
-|  50000 |       404 |         97.92 |
-|  75000 |       427 |         98.35 |
-| 100000 |       439 |         99.11 |
-
-## Observaciones
-
-- Población crece pero desacelera marcadamente: la curva se aplana hacia ~440-460, muy por debajo de P_max=1000. No hay señal de que llegue al cap en este régimen.
-- Densidad al tick 100k: 439/1024 ≈ **0.43 organismos/celda**. ATTACK tiene sentido mecánico pero el impacto ecológico sería moderado con esta densidad.
-- Energía media satura en ~99 al tick 100k, confirmando que `e_max_internal=100` funciona y que PHOTOSYNTHESIZE es la fuente dominante de toda la población.
-- El equilibrio poblacional parece estar determinado por el balance entre `repro_cost=4`, `repro_threshold=60`, `base_metabolic_cost=0.4` y la absorción pasiva por colisión — no por P_max ni por escasez de PHOTOSYNTHESIZE.
+```diff
+diff --git a/runs/configs/v05_attack.json b/runs/configs/v05_attack.json
+new file mode 100644
+index 0000000..c235630
+--- /dev/null
++++ b/runs/configs/v05_attack.json
+@@ -0,0 +1,37 @@
++{
++  "meta": {
++    "name": "v05_attack",
++    "description": "First run with deliberate ATTACK action. Passive collision absorption removed. attack_efficiency=0.8. Based on v04b_long_run params; 10k ticks smoke test.",
++    "date": "2026-06-15"
++  },
++  "seed": 42,
++  "ticks": 10000,
++  "out_dir": "runs/2026-06-15_v05_attack",
++  "constitution": "You are a ruminant. Survive.",
++  "memory": "",
++  "adapter": {
++    "type": "dummy",
++    "p_action": 0.5
++  },
++  "world_energy_lo": 5,
++  "world_energy_hi": 20,
++  "params": {
++    "N": 32,
++    "e_max_internal": 100,
++    "regen_rate": 0,
++    "P0": 20,
++    "e_i0": 25,
++    "max_tokens": 50,
++    "token_cost": 0.05,
++    "move_cost": 0.5,
++    "feed_cap": 6,
++    "feed_eff": 1.0,
++    "base_metabolic_cost": 0.4,
++    "photo_energy": 4.0,
++    "attack_efficiency": 0.8,
++    "repro_threshold": 60,
++    "repro_cost": 4,
++    "child_e0": 10,
++    "P_max": 1000
++  }
++}
+diff --git a/src/engine.py b/src/engine.py
+index 7a0a028..468c4db 100644
+--- a/src/engine.py
++++ b/src/engine.py
+@@ -9,6 +9,7 @@ Spec references:
+ 
+ from __future__ import annotations
+ 
++import random
+ from collections import Counter
+ from dataclasses import dataclass
+ from typing import List, Dict, Any, Optional
+@@ -21,7 +22,7 @@ class TickStats:
+     births: int
+     deaths: int
+     moves: int
+-    absorptions: int
++    attacks: int
+     mean_internal_energy: float
+ 
+ 
+@@ -67,7 +68,7 @@ class Engine:
+     def step(self) -> TickStats:
+         self.tick += 1
+ 
+-        births = deaths = moves = absorptions = 0
++        births = deaths = moves = attacks = 0
+ 
+         # 1) Observe + 2) Generate + 3) Parse actions (for all, before applying)
+         outputs: Dict[int, Dict[str, Any]] = {}
+@@ -136,13 +137,14 @@ class Engine:
+             elif a == "PHOTOSYNTHESIZE":
+                 feeding_delta = photo_energy
+                 r.energy_internal += feeding_delta
+-            discovered = self.llm.feedback(r.id, a, feeding_delta)
+-            if discovered and self.logger is not None:
+-                state = self.llm.get_organism_state(r.id)
+-                self.logger.log_event(
+-                    self.tick, "discovery", r.id,
+-                    action=a, x=r.x, y=r.y, **state,
+-                )
++            if a != "ATTACK":
++                discovered = self.llm.feedback(r.id, a, feeding_delta)
++                if discovered and self.logger is not None:
++                    state = self.llm.get_organism_state(r.id)
++                    self.logger.log_event(
++                        self.tick, "discovery", r.id,
++                        action=a, x=r.x, y=r.y, **state,
++                    )
+ 
+         # 6.5) Metabolic drain — after feeding so an organism that eats on its last tick survives.
+         base_metabolic_cost = float(self.p.get("base_metabolic_cost", 0.0))
+@@ -190,26 +192,53 @@ class Engine:
+ 
+         self.ruminants.extend(new_children)
+ 
+-        # 8) Absorption (collision)
+-        # Naive O(n^2) for v0.1 simplicity.
+-        ratio = float(self.p["absorb_ratio"])
+-        frac = float(self.p["absorb_frac"])
+-        for i in range(len(self.ruminants)):
+-            for j in range(i + 1, len(self.ruminants)):
+-                a = self.ruminants[i]
+-                b = self.ruminants[j]
+-                if a.x == b.x and a.y == b.y:
+-                    # decide stronger
+-                    if a.energy_internal >= ratio * b.energy_internal:
+-                        gain = frac * b.energy_internal
+-                        a.energy_internal += gain
+-                        b.energy_internal -= gain
+-                        absorptions += 1
+-                    elif b.energy_internal >= ratio * a.energy_internal:
+-                        gain = frac * a.energy_internal
+-                        b.energy_internal += gain
+-                        a.energy_internal -= gain
+-                        absorptions += 1
++        # 8) ATTACK resolution
++        attack_efficiency = float(self.p.get("attack_efficiency", 0.8))
++        cell_map: Dict[Any, List[Any]] = {}
++        for r in self.ruminants:
++            cell_map.setdefault((r.x, r.y), []).append(r)
++
++        killed: set = set()  # ids attacked this tick, marked for removal in step 9
++
++        for idx, r in enumerate(self.ruminants):
++            if outputs[idx]["action"] != "ATTACK":
++                continue
++            if r.id in killed:  # attacker already dead this tick
++                continue
++            candidates = [
++                o for o in cell_map.get((r.x, r.y), [])
++                if o.id != r.id and o.id not in killed
++            ]
++            if not candidates:
++                self.llm.feedback(r.id, "ATTACK", 0.0)  # no victim → no discovery
++                continue
++            victim = random.choice(candidates)
++            energy_gained = attack_efficiency * victim.energy_internal
++            r.energy_internal += energy_gained
++            victim.energy_internal = 0.0
++            killed.add(victim.id)
++            attacks += 1
++            discovered = self.llm.feedback(r.id, "ATTACK", energy_gained)
++            if discovered and self.logger is not None:
++                state = self.llm.get_organism_state(r.id)
++                self.logger.log_event(
++                    self.tick, "discovery", r.id,
++                    action="ATTACK", x=r.x, y=r.y, **state,
++                )
++            if self.logger is not None:
++                self.logger.log_event(
++                    self.tick, "attack", r.id,
++                    victim_id=victim.id,
++                    energy_gained=energy_gained,
++                    x=r.x, y=r.y,
++                )
++
++        # 8.5) Re-apply internal energy cap after ATTACK
++        if e_max_internal is not None:
++            cap = float(e_max_internal)
++            for r in self.ruminants:
++                if r.energy_internal > cap:
++                    r.energy_internal = cap
+ 
+         # 9) Remove dead
+         alive: List[Any] = []
+@@ -220,9 +249,10 @@ class Engine:
+                 deaths += 1
+                 if self.logger is not None:
+                     state = self.llm.get_organism_state(r.id)
++                    cause = "attacked" if r.id in killed else "starvation"
+                     self.logger.log_event(
+                         self.tick, "death", r.id,
+-                        age=r.age, x=r.x, y=r.y, **state,
++                        cause=cause, age=r.age, x=r.x, y=r.y, **state,
+                     )
+         self.ruminants = alive
+ 
+@@ -241,7 +271,7 @@ class Engine:
+             births=births,
+             deaths=deaths,
+             moves=moves,
+-            absorptions=absorptions,
++            attacks=attacks,
+             mean_internal_energy=float(mean_e),
+         )
+         if self.logger is not None:
+```
