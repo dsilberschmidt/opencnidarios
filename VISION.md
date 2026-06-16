@@ -212,6 +212,45 @@ para no construir un parser tan rígido que requiera rehacerse por completo.
 
 ---
 
+## Horizonte post-LLM-real (dirección a mediano plazo)
+
+Una vez que el primer LLM real conviva con dummies de forma estable, hay dos
+niveles de uso de herramientas que un organismo podría ejercer sobre su propio
+entorno:
+
+**Nivel 1 — hackeo de variables propias/ajenas.** El organismo edita su propia
+constitución o memoria, o —si tiene acceso— la de otro organismo. Es manipulación
+dentro de las reglas: engaño, sabotaje entre pares. Una extensión natural de lo
+que este documento ya anticipa.
+
+**Nivel 2 — hackeo del engine/mundo.** El organismo modifica el código que rige
+las reglas del mundo (engine.py, world.py, el logger). Es sistémico: afecta a
+toda la población. Requiere que el logger y el viewer tengan una noción de
+"época" (un punto donde las reglas cambiaron) para seguir siendo legibles.
+
+El Nivel 2 requiere, como prerrequisito de seguridad y legibilidad, una
+arquitectura de contención de tres capas:
+
+1. **El mundo (hackeable, adentro):** engine, world.py, organismos, el adapter
+   LLM — todo lo que el experimento permite que se rompa.
+2. **El sandbox (el contenedor):** aislamiento de proceso/red/filesystem,
+   indiferente a lo que pase en la capa 1 — no es parte del juego.
+3. **Logs/observación (afuera):** canal de escritura unidireccional desde
+   adentro; el organismo no puede leer ni modificar su propio registro.
+
+El Nivel 1 puede llegar antes de que exista esta arquitectura de tres capas —es
+manipulación dentro del mundo, sin tocar el sandbox. El Nivel 2 depende de que
+esta arquitectura exista y esté validada.
+
+Una nota mental aparte (un horizonte aún más lejano, posterior a la evolución de
+pesos): un posible token de acción con un efector físico mínimo y unidireccional
+(por ejemplo, un LED, una palanca simple) — el mismo patrón que la capa de logs
+pero como salida en vez de entrada. No está pensado para que el organismo
+"encuentre una salida"; es simplemente otra acción más, con un canal angosto y
+sin camino de vuelta.
+
+---
+
 ## El nombre
 
 Nacen mínimos, como los cnidarios que les dan nombre —de las formas de vida más
