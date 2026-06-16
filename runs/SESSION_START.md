@@ -1,4 +1,4 @@
-Leé CONTEXT.md completo. Estamos en la branch experiment/v02-two-energy-sources. No toques nada. Resumime el estado actual y confirmá que entendiste los próximos pasos antes de arrancar.
+Leé CONTEXT.md completo. Verificá la branch activa con git branch --show-current antes de arrancar. No toques nada. Resumime el estado actual y confirmá que entendiste los próximos pasos antes de arrancar.
 
 Reglas de trabajo:
 1. Antes de implementar cualquier cosa, escribí el plan completo en runs/pending_review.md y esperá confirmación explícita ("adelante", "ejecutá", "dale") antes de tocar ningún archivo.
