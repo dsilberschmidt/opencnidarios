@@ -46,6 +46,7 @@ class Engine:
         self.tick = 0
         self.triggered_tokens: Dict[str, set] = {}
         self.accepted_memories: List[str] = []
+        self.last_actions: Dict[str, str] = {}
 
     def seed_population(self, ruminants: List[Any]) -> None:
         self.ruminants = list(ruminants)
@@ -64,14 +65,23 @@ class Engine:
             "E_E": e_e,
             "E_W": e_w,
             "e_i": r.energy_internal,
+            "last_action": self.last_actions.get(r.id, None),
         }
 
     def _parse_action(self, text: str) -> Optional[str]:
-        # First line only
-        first = (text or "").splitlines()[0].strip() if text else ""
-        if first in {"NORTH", "SOUTH", "EAST", "WEST", "REPRODUCE", "EAT", "ATTACK", "PHOTOSYNTHESIZE"}:
-            return first
-        return None
+        if not text:
+            return None
+        for token in ("EAT", "PHOTOSYNTHESIZE", "ATTACK", "REPRODUCE"):
+            if re.search(rf"\b{token}\b", text):
+                return token
+        best_token: Optional[str] = None
+        best_pos: Optional[int] = None
+        for token in ("NORTH", "SOUTH", "EAST", "WEST"):
+            m = re.search(rf"\b{token}\b", text)
+            if m and (best_pos is None or m.start() < best_pos):
+                best_pos = m.start()
+                best_token = token
+        return best_token
 
     def run(self, ticks: int) -> None:
         for _ in range(ticks):
@@ -100,6 +110,7 @@ class Engine:
                 "text": out_text,
                 "tokens": out_tokens,
                 "action": action,
+                "id": r.id,
             }
             if self.logger is not None:
                 self.logger.log_ruminate(self.tick, r.id, out_text, action)
@@ -318,6 +329,13 @@ class Engine:
                         cause=cause, age=r.age, x=r.x, y=r.y, **state,
                     )
         self.ruminants = alive
+
+        # 9.5) Update last_actions for organisms still alive
+        alive_ids = {r.id for r in self.ruminants}
+        for idx in range(len(outputs)):
+            rid = outputs[idx]["id"]
+            if rid in alive_ids:
+                self.last_actions[rid] = outputs[idx]["action"]
 
         # 10) Regenerate world
         self.world.regenerate()

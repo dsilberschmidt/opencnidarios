@@ -52,6 +52,7 @@ class ClaudeAdapter(LLMAdapter):
             f"E_E: {observation['E_E']:.2f}\n"
             f"E_W: {observation['E_W']:.2f}\n"
             f"energy_internal: {observation['e_i']:.2f}\n"
+            f"last_action: {observation['last_action']}\n"
             f"XEstadoX"
         )
 
