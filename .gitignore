@@ -1,6 +1,5 @@
 __pycache__/
 *.pyc
 runs/latest/
-runs/*/ticks_*.csv
-runs/*/events_*.jsonl
 runs/pending_review.md
+.env
