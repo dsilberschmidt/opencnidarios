@@ -350,13 +350,18 @@ El historial de experimentos queda en git, no en nombres de archivo.
 5. ~~**Implementar ATTACK**~~: completado (2026-06-15). Absorción pasiva eliminada; ATTACK
    deliberado activo. Validado en v05_attack: 5.493 ataques, 99.9% muertes por depredación,
    población estabiliza ~244 (regulador real, no P_max). Commit: `2bee255` + `c34144b`.
-6. **Adapter LLM real — población mixta**: introducir unos pocos organismos LLM reales
-   (e.g. Claude Haiku) conviviendo con dummies. Diseño: un adapter que admita múltiples
-   proveedores por organismo; los LLMs reales compiten bajo las mismas reglas de selección
-   que los dummies. Primer experimento: ¿sobreviven más tiempo? ¿descubren PHOTOSYNTHESIZE
-   o ATTACK antes? Diversidad de proveedores (Anthropic, OpenAI u otros) como extensión
-   natural. Las entrevistas post-exposición (sacar un organismo del grid y preguntarle qué
-   aprendió) son una herramienta de análisis a habilitar desde esta fase.
+6. **Primera simulación con LLM real**: un único organismo LLM, sin competidores, mundo
+   rico en energía. Objetivo: validar el adapter y observar comportamiento emergente real
+   antes de escalar. Diseño especificado en `Docs/07 LLM Adapter - Primera Simulacion`.
+   Puntos clave:
+   - El organismo rumía en stream continuo sin cap de tokens; el engine parsea acciones del stream.
+   - El mundo inyecta estado via marcadores `XEstadoX ... XEstadoX` integrados en el contexto
+     del organismo (no es un diálogo).
+   - La constitución inicial menciona que organismos primitivos descubrieron palabras en inglés
+     que produjeron saltos cualitativos, sin revelar cuáles.
+   - Entrevistas en modo solo lectura: organismo fuera del grid, sin alterar su estado.
+   - Logger registra el input completo de cada tick; especialmente valioso en ticks de discovery.
+   - Incógnita abierta: si el organismo distingue su propio rumiar del contexto del mundo.
 
 ---
 
