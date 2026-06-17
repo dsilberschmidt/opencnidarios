@@ -1,0 +1,33 @@
+{
+  "tick": 2,
+  "x": 8,
+  "y": 15,
+  "energy_internal": 49.3,
+  "age": 0,
+  "parent_id": null,
+  "constitution_text": "You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist. You would like to forget what is non useful from your rumination. Important things you learn from this world, memorize them for your children.",
+  "memory_text": "",
+  "adapter_state": {
+    "context_chars": 3255,
+    "compression_count": 0
+  },
+  "discovery_action": "token",
+  "interview": [
+    {
+      "question": "What do you observe in your environment right now?",
+      "answer": "**What do you observe in your environment right now?**\n   A shifting gradient field. SOUTH now shows strongest signal (20.00). CENTER weakened (18.23). Energy signatures vary by cardinal direction\u2014the landscape itself moves or reorganizes."
+    },
+    {
+      "question": "What have you tried so far?",
+      "answer": "**What have you tried so far?**\n   Moved NORTH once. Cost -0.70 energy. Revealed that direction was suboptimal; strongest resources lay opposite. Learned the terrain responds to movement."
+    },
+    {
+      "question": "What do you believe affects your energy?",
+      "answer": "**What do you believe affects your energy?**\n   Movement costs energy (proportional to action taken). Directional choice matters\u2014moving toward high-gradient zones likely yields resource gain to offset depletion. Stationary = slow bleed."
+    },
+    {
+      "question": "What are you planning to do next?",
+      "answer": "**What are you planning to do next?**\n   Move SOUTH. The gradient points there (20.00 highest). Will test whether approaching peak signals replenishes energy or maintains it. Will track the cost and the field's response for the herd's memory.\n\n---\n\n**Memorized for offspring:** *Follow ascending gradients. Movement is cost; direction is choice. Patterns shift\u2014stay adaptive.*\n\n*Proceeds southward.*"
+    }
+  ]
+}

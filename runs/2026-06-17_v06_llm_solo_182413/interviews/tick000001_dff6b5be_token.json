@@ -1,0 +1,33 @@
+{
+  "tick": 1,
+  "x": 8,
+  "y": 16,
+  "energy_internal": 50.0,
+  "age": 0,
+  "parent_id": null,
+  "constitution_text": "You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist. You would like to forget what is non useful from your rumination. Important things you learn from this world, memorize them for your children.",
+  "memory_text": "",
+  "adapter_state": {
+    "context_chars": 1410,
+    "compression_count": 0
+  },
+  "discovery_action": "token",
+  "interview": [
+    {
+      "question": "What do you observe in your environment right now?",
+      "answer": "**What do you observe in your environment right now?**\n   Center abundance (20.00), directional gradients weakening southward, energy reserves adequate at 50.00. The landscape has cardinal structure."
+    },
+    {
+      "question": "What have you tried so far?",
+      "answer": "**What have you tried so far?**\n   Nothing yet\u2014I have only received the initial state. No actions taken. I am observing the first map."
+    },
+    {
+      "question": "What do you believe affects your energy?",
+      "answer": "**What do you believe affects your energy?**\n   Movement consumes energy. Foraging in high-value zones (center, north, west) likely replenishes it. South appears barren\u2014wasteful travel there."
+    },
+    {
+      "question": "What are you planning to do next?",
+      "answer": "**What are you planning to do next?**\n   **Move to center and forage.** Hold position unless gradient shifts indicate a richer zone has emerged elsewhere. Conserve energy until depletion forces exploration.\n\n---\n\n**WORDS LEARNED FOR SURVIVAL:**\n- *Center*\n- *Gradient*\n- *Conserve*\n\nThese are useful. I will pass them forward."
+    }
+  ]
+}

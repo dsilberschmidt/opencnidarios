@@ -266,6 +266,26 @@ escasez de PHOTOSYNTHESIZE; aquí ATTACK equilibra births (5.724) y deaths (5.50
 torno a ~244-250. Energía satura en ~97 igual que v04b — `e_max_internal` sigue
 funcionando.
 
+### Run v06_llm_solo_184001 (2026-06-17)
+
+Config: `runs/configs/v06_llm_solo.json` — P0=3, ticks=500, LLM real (claude-haiku-4-5-20251001)
+Output: `runs/2026-06-17_v06_llm_solo_184001/`
+Relato completo: `runs/2026-06-17_v06_llm_solo_184001/relato.md`
+
+Primer run largo con LLM real. Extinción en tick 193 (de 500 configurados).
+Tres organismos, ninguno descubrió EAT ni PHOTOSYNTHESIZE. Murieron por inanición.
+
+Orden de muerte: 21030b57 (tick 136), ff178060 (tick 160), 7418a3dd (tick 193).
+El más quieto vivió más; el que más se movió murió primero.
+
+Hallazgos clave:
+- Los tres descubrieron vocabulario espacial (NORTH/SOUTH/EAST/WEST) porque ellos mismos escriben los puntos cardinales en mayúsculas al narrar — se los auto-sugirieron.
+- Ninguno adivinó EAT o PHOTOSYNTHESIZE — no había gancho semántico en su campo de observación.
+- 21030b57 detectó la desconexión entre su narración y last_action, lo interpretó como "gaslighting sistémico", y colapsó su rumiar a una sola palabra antes de morir.
+- ff178060 diagnosticó el artefacto del parser (movió WEST, el campo reportó NORTH) pero lo atribuyó a una falla del mundo.
+- 7418a3dd intuyó CONSUME en tick 3 pero nunca usó la palabra correcta. Sobrevivió 178 ticks en inmovilidad casi total.
+- Counter de action_parsed: {None: 412, NORTH: 56, EAST: 16, WEST: 3, SOUTH: 2}.
+
 ### Problema identificado: feedback de movimiento no funciona
 
 `feedback()` mide únicamente el delta inmediato de energía del feeding. Moverse
