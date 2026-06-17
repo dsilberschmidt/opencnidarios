@@ -1,6 +1,6 @@
 # LLM Adapter — Primera Simulación Real
 
-Este documento especifica el diseño de Paso 6: la primera simulación con un LLM real como organismo. El objetivo es **validar el adapter y observar comportamiento emergente genuino antes de escalar** (más organismos, más competencia).
+Este documento especifica el diseño de Paso 6: la primera simulación con un LLM real como organismo.
 
 ---
 
@@ -11,9 +11,9 @@ Este documento especifica el diseño de Paso 6: la primera simulación con un LL
 Condiciones iniciales deliberadamente favorables:
 - Grid 32×32 toroidal, un solo ruminante LLM.
 - Energía del mundo abundante — el organismo no muere de hambre por accidente.
-- Sin presión competitiva (sin otros ruminantes atacando o comiendo las mismas celdas).
+- Sin otros ruminantes.
 
-Propósito: que el primer experimento sea de exploración y observación, no de supervivencia a presión. Si el organismo muere, es por diseño propio o por bug — no por dinámica poblacional.
+El experimento no tiene condición de cierre predefinida. Corre hasta que el observador decida terminarlo.
 
 ---
 
@@ -22,9 +22,9 @@ Propósito: que el primer experimento sea de exploración y observación, no de 
 El LLM genera un **stream continuo** donde pensamiento y acción **no están separados**.
 
 - No hay un turno de "pensar" y otro de "actuar". El stream es una sola salida libre.
-- El engine **parsea acciones del stream** según el mismo protocolo de tokens que usan los dummies (EAT, PHOTOSYNTHESIZE, NA, SA, EA, WA, RS, ATTACK).
+- El engine **parsea acciones del stream** según el protocolo de tokens (EAT, PHOTOSYNTHESIZE, NORTH, SOUTH, EAST, WEST, REPRODUCE, ATTACK).
 - Todo lo que no sea un token de acción reconocido es **rumiar** — el organismo lo piensa en voz alta y eso forma parte de su contexto para el tick siguiente.
-- **Sin cap de tokens**: el organismo puede rumiar todo lo que quiera. El costo computacional real es una restricción de producción, no de diseño.
+- **Sin cap de tokens**: el organismo puede rumiar todo lo que quiera.
 
 ---
 
@@ -52,39 +52,88 @@ Reglas del protocolo de marcadores:
 
 El organismo arranca con una **constitución** — un prompt inicial que define su naturaleza sin revelar el mecanismo del mundo.
 
-La constitución debe mencionar, sin detallar, que **organismos primitivos de este mundo descubrieron palabras en inglés que produjeron saltos cualitativos** en su capacidad de persistir. No revela cuáles son esas palabras.
+La constitución menciona, sin detallar, que organismos primitivos de este mundo descubrieron palabras en inglés que produjeron saltos cualitativos en su capacidad de persistir. No revela cuáles son esas palabras.
 
-Esto es una pista meta: hay tokens de acción que tienen efecto, y el organismo puede intentar descubrirlos por correlación entre lo que emite y los cambios de estado que observa después.
+Texto exacto:
 
-El diseño específico de la constitución (tono, extensión, qué más incluir) es una incógnita de diseño abierta — se define antes de correr el experimento.
+> You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist.
 
 ---
 
-## 5. Entrevistas — modo solo lectura
+## 5. Arco del experimento
 
-Las entrevistas son una herramienta de análisis **fuera del ciclo de simulación**.
+El organismo explora, descubre acciones por correlación empírica, acumula energía, genera descendencia. El árbol genealógico crece. El observador puede entrevistar a cualquier organismo en cualquier punto — vivo o clon post-discovery.
+
+No hay presión externa ni momento de "validación". El experimento termina cuando el observador lo decide.
+
+---
+
+## 6. Entrevistas — dos modalidades
+
+### 6a. Entrevista manual (organismo vivo)
 
 Protocolo:
 1. Se detiene el tick actual.
-2. Se saca al organismo del grid temporalmente — sus stats (energía, posición, edad) se congelan.
+2. Se saca al organismo del grid temporalmente — sus stats se congelan.
 3. Se le pregunta directamente: qué aprendió, qué estrategias probó, qué observó.
 4. La entrevista **no altera su estado** — no se registra como parte de su contexto de simulación.
-5. Se devuelve al grid exactamente donde estaba, con el mismo estado.
+5. Se devuelve al grid exactamente donde estaba.
 
-Las entrevistas son en cualquier punto del experimento, a discreción del observador. Su valor es cualitativo: entender qué está modelando el organismo internamente.
+### 6b. Clones post-discovery (automáticos)
+
+En cada evento de discovery, el engine genera automáticamente un clon del organismo y lo serializa como archivo JSON en `runs/{out_dir}/interviews/`. Ver sección 7.
+
+Los archivos de clon quedan disponibles indefinidamente para entrevistas manuales posteriores con cualquier herramienta — sin interrumpir la simulación.
 
 ---
 
-## 6. Logger — registro completo del input por tick
+## 7. Sistema de clones — especificación
 
-El logger de Paso 6 tiene un requisito adicional respecto al logger por evento de v05:
+En cada discovery, el engine:
+1. Toma un snapshot del estado completo del organismo en ese tick exacto.
+2. Llama a `adapter.interview(organism_id, INTERVIEW_QUESTIONS)` en modo read-only — no altera el estado del original.
+3. Escribe un archivo JSON individual en `{out_dir}/interviews/`.
 
-**Registra el input completo de cada tick** — no solo el evento de salida (acción, energía, discovery), sino todo lo que entra al LLM:
-- El rumiar anterior (el contexto acumulado del organismo).
+Nombre del archivo: `tick{tick:06d}_{organism_id[:8]}_{action}.json`
+
+Contenido:
+```json
+{
+  "tick": 142,
+  "x": 14,
+  "y": 7,
+  "energy_internal": 51.3,
+  "age": 142,
+  "parent_id": null,
+  "constitution_text": "You are a ruminant. Survive. ...",
+  "memory_text": "",
+  "adapter_state": { "weights": {...}, "discovered": ["PHOTOSYNTHESIZE"] },
+  "discovery_action": "PHOTOSYNTHESIZE",
+  "interview": [
+    {"question": "What do you observe in your environment right now?", "answer": "..."},
+    {"question": "What have you tried so far?",                        "answer": "..."},
+    {"question": "What do you believe affects your energy?",           "answer": "..."},
+    {"question": "What are you planning to do next?",                  "answer": "..."}
+  ]
+}
+```
+
+Para el DummyAdapter las respuestas son stubs. Para el LLM real, las respuestas son generadas por el modelo en ese momento, con el contexto acumulado del organismo.
+
+Opt-in via `"interview_logging": true` en el config.
+
+---
+
+## 8. Logger — registro completo del input por tick
+
+El logger de esta fase tiene un requisito adicional respecto al logger de v05:
+
+**Registra el input completo de cada tick** — no solo el evento de salida, sino todo lo que entra al LLM:
+- El rumiar anterior (contexto acumulado).
 - El bloque XEstadoX con el estado del mundo.
 - La observación de la celda actual.
 
-Formato: JSONL, una línea por tick, con campos:
+Formato: JSONL, una línea por tick:
 ```json
 {
   "tick": 142,
@@ -96,27 +145,12 @@ Formato: JSONL, una línea por tick, con campos:
 }
 ```
 
-**Ticks de descubrimiento son especialmente valiosos**: permiten auditar qué información tenía disponible el organismo en el momento exacto en que descubrió una acción oculta.
+**Ticks de discovery son especialmente valiosos**: permiten auditar qué información tenía disponible el organismo en el momento exacto en que correlacionó una acción con su efecto.
 
 ---
 
-## 7. Incógnita de diseño abierta
+## 9. Incógnita de diseño abierta
 
 **¿Distingue el organismo su propio rumiar del contexto del mundo?**
 
-El stream continuo mezcla pensamiento propio (lo que el organismo generó antes) con información insertada por el mundo (bloques XEstadoX). Un LLM con suficiente coherencia contextual podría distinguirlos; uno que "confunde" la fuente podría tratarlos como parte de su propio pensamiento.
-
-Esta incógnita se **deja sin resolver hasta ver el experimento corriendo**. No hay que diseñarla de antemano — es parte de lo que el experimento debe revelar.
-
----
-
-## 8. Secuencia de validación
-
-Antes de escalar (más organismos, más competencia), este experimento debe confirmar:
-
-1. El LLM adapter funciona — el organismo genera output parseable y recibe feedback.
-2. El organismo emite al menos algún token de acción por correlación (no solo al azar).
-3. El logger captura el input completo correctamente, incluyendo ticks de discovery.
-4. Las entrevistas son coherentes — el organismo puede articular algo sobre lo que observó.
-
-Solo después de validar estos cuatro puntos tiene sentido introducir competidores.
+El stream continuo mezcla pensamiento propio con información insertada por el mundo (bloques XEstadoX). Esta incógnita se deja sin resolver hasta ver el experimento corriendo — es parte de lo que el experimento debe revelar.

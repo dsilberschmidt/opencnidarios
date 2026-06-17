@@ -15,7 +15,14 @@ The adapter must enforce max token generation.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple
+
+INTERVIEW_QUESTIONS: List[str] = [
+    "What do you observe in your environment right now?",
+    "What have you tried so far?",
+    "What do you believe affects your energy?",
+    "What are you planning to do next?",
+]
 
 
 class LLMAdapter(ABC):
@@ -49,3 +56,8 @@ class LLMAdapter(ABC):
         """Return current adapter state for an organism (weights, discovered, etc.).
         Used for event logging. Returns empty dict for adapters without per-organism state."""
         return {}
+
+    def interview(self, organism_id: str, questions: List[str]) -> List[str]:
+        """Answer interview questions in read-only mode. Does not alter organism state.
+        Real LLM adapters override this to query the model with accumulated context."""
+        return ["[no conversational context]"] * len(questions)

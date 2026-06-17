@@ -24,18 +24,18 @@ from typing import Dict, Any, Optional, Set, Tuple
 
 from .base import LLMAdapter
 
-_NORMAL_ACTIONS = ["NA", "SA", "EA", "WA", "RS", "EAT", "ATTACK", "PHOTOSYNTHESIZE"]
-_INITIAL_WEIGHTS = [1.0,  1.0,  1.0,  1.0,  5.0, 100.0,    1.0,           1.0]
+_NORMAL_ACTIONS = ["NORTH", "SOUTH", "EAST", "WEST", "REPRODUCE", "EAT", "ATTACK", "PHOTOSYNTHESIZE"]
+_INITIAL_WEIGHTS = [   1.0,    1.0,   1.0,   1.0,        5.0, 100.0,    1.0,                1.0]
 
 # First successful use of these actions triggers a one-time weight jump.
-# EAT and RS are excluded: EAT starts high; RS gradual reinforcement is sufficient.
+# EAT and REPRODUCE are excluded: EAT starts high; REPRODUCE gradual reinforcement is sufficient.
 _DISCOVERY_JUMP: Dict[str, float] = {
     "PHOTOSYNTHESIZE": 100.0,
     "ATTACK":           30.0,
-    "NA":               30.0,
-    "SA":               30.0,
-    "EA":               30.0,
-    "WA":               30.0,
+    "NORTH":            30.0,
+    "SOUTH":            30.0,
+    "EAST":             30.0,
+    "WEST":             30.0,
 }
 
 

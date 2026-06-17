@@ -92,8 +92,8 @@ ocurren por emisión aleatoria de `RS`, no por comportamiento aprendido.
 - `LLMAdapter.feedback(organism_id, action, energy_delta) -> bool` — retorna True si disparó un discovery jump. Delta es exclusivo del feeding (no incluye costo metabólico).
 - `LLMAdapter.register_child(child_id, parent_id)` — concreto no-op en base; sobreescrito en DummyAdapter para herencia lamarckiana.
 - `LLMAdapter.get_organism_state(organism_id) -> dict` — retorna pesos y discovered para logging. Default `{}`.
-- `DummyAdapter._weights`: pesos iniciales no uniformes: `EAT=100, RS=5, NA/SA/EA/WA/ATTACK/PHOTOSYNTHESIZE=1`. `generate()` usa `random.choices()` ponderado.
-- `DummyAdapter._discovered`: set por organismo. Primera acción exitosa dispara un salto irreversible de peso (`PHOTOSYNTHESIZE→100`, `ATTACK/movimientos→30`). EAT y RS sin salto.
+- `DummyAdapter._weights`: pesos iniciales no uniformes: `EAT=100, REPRODUCE=5, NORTH/SOUTH/EAST/WEST/ATTACK/PHOTOSYNTHESIZE=1`. `generate()` usa `random.choices()` ponderado.
+- `DummyAdapter._discovered`: set por organismo. Primera acción exitosa dispara un salto irreversible de peso (`PHOTOSYNTHESIZE→100`, `ATTACK/movimientos→30`). EAT y REPRODUCE sin salto.
 - Herencia lamarckiana: `register_child()` copia tanto `_weights` como `_discovered`.
 - El engine llama `feedback()` tras el step 6 (feeding) y `register_child()` tras `clone_child()`.
 - Corrida de verificación: sin errores; extinción en tick 136 (problema de balance preexistente, no regresión).

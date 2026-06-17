@@ -22,6 +22,7 @@ class Logger:
         out_dir: str = "runs/latest",
         run_id: str | None = None,
         event_logging: bool = False,
+        interview_logging: bool = False,
     ):
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
@@ -35,6 +36,9 @@ class Logger:
         if event_logging:
             ev_filename = f"events_{run_id}.jsonl" if run_id else "events.jsonl"
             self._jsonl_file = (self.out_dir / ev_filename).open("w", encoding="utf-8")
+
+        self.interview_logging = interview_logging
+        self._interviews_dir: Path | None = None
 
     def log_tick(self, tick_stats) -> None:
         row = asdict(tick_stats)
@@ -57,6 +61,29 @@ class Logger:
         record.update(payload)
         self._jsonl_file.write(json.dumps(record) + "\n")
         self._jsonl_file.flush()
+
+    def write_interview_clone(
+        self,
+        tick: int,
+        organism_id: str,
+        discovery_action: str,
+        ruminant_snapshot: dict,
+        adapter_state: dict,
+        interview_qa: list,
+    ) -> None:
+        if not self.interview_logging:
+            return
+        if self._interviews_dir is None:
+            self._interviews_dir = self.out_dir / "interviews"
+            self._interviews_dir.mkdir(exist_ok=True)
+        data = {
+            **ruminant_snapshot,
+            "adapter_state": adapter_state,
+            "discovery_action": discovery_action,
+            "interview": interview_qa,
+        }
+        fname = f"tick{tick:06d}_{organism_id[:8]}_{discovery_action}.json"
+        (self._interviews_dir / fname).write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def close(self) -> None:
         if self._csv_file:

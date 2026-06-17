@@ -14,6 +14,8 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
+from .llm_adapter.base import INTERVIEW_QUESTIONS
+
 
 @dataclass
 class TickStats:
@@ -57,7 +59,7 @@ class Engine:
     def _parse_action(self, text: str) -> Optional[str]:
         # First line only
         first = (text or "").splitlines()[0].strip() if text else ""
-        if first in {"NA", "SA", "EA", "WA", "RS", "EAT", "ATTACK", "PHOTOSYNTHESIZE"}:
+        if first in {"NORTH", "SOUTH", "EAST", "WEST", "REPRODUCE", "EAT", "ATTACK", "PHOTOSYNTHESIZE"}:
             return first
         return None
 
@@ -99,15 +101,15 @@ class Engine:
         move_cost = self.p["move_cost"]
         for idx, r in enumerate(self.ruminants):
             a = outputs[idx]["action"]
-            if a in {"NA", "SA", "EA", "WA"}:
+            if a in {"NORTH", "SOUTH", "EAST", "WEST"}:
                 dx, dy = 0, 0
-                if a == "NA":
+                if a == "NORTH":
                     dy = -1
-                elif a == "SA":
+                elif a == "SOUTH":
                     dy = 1
-                elif a == "EA":
+                elif a == "EAST":
                     dx = 1
-                elif a == "WA":
+                elif a == "WEST":
                     dx = -1
                 origin_x, origin_y = r.x, r.y
                 r.x, r.y = self.world.wrap(r.x + dx, r.y + dy)
@@ -145,6 +147,24 @@ class Engine:
                         self.tick, "discovery", r.id,
                         action=a, x=r.x, y=r.y, **state,
                     )
+                    answers = self.llm.interview(r.id, INTERVIEW_QUESTIONS)
+                    self.logger.write_interview_clone(
+                        tick=self.tick,
+                        organism_id=r.id,
+                        discovery_action=a,
+                        ruminant_snapshot={
+                            "tick": self.tick, "x": r.x, "y": r.y,
+                            "energy_internal": r.energy_internal,
+                            "age": r.age, "parent_id": r.parent_id,
+                            "constitution_text": r.constitution_text,
+                            "memory_text": r.memory_text,
+                        },
+                        adapter_state=state,
+                        interview_qa=[
+                            {"question": q, "answer": ans}
+                            for q, ans in zip(INTERVIEW_QUESTIONS, answers)
+                        ],
+                    )
 
         # 6.5) Metabolic drain — after feeding so an organism that eats on its last tick survives.
         base_metabolic_cost = float(self.p.get("base_metabolic_cost", 0.0))
@@ -169,7 +189,7 @@ class Engine:
         new_children: List[Any] = []
         for idx, r in enumerate(self.ruminants):
             a = outputs[idx]["action"]
-            if a == "RS" and r.energy_internal >= float(T):
+            if a == "REPRODUCE" and r.energy_internal >= float(T):
                 if cell_counts is not None and cell_counts[(r.x, r.y)] >= int(cell_cap):
                     continue
                 r.energy_internal -= float(repro_cost)
@@ -225,6 +245,24 @@ class Engine:
                 self.logger.log_event(
                     self.tick, "discovery", r.id,
                     action="ATTACK", x=r.x, y=r.y, **state,
+                )
+                answers = self.llm.interview(r.id, INTERVIEW_QUESTIONS)
+                self.logger.write_interview_clone(
+                    tick=self.tick,
+                    organism_id=r.id,
+                    discovery_action="ATTACK",
+                    ruminant_snapshot={
+                        "tick": self.tick, "x": r.x, "y": r.y,
+                        "energy_internal": r.energy_internal,
+                        "age": r.age, "parent_id": r.parent_id,
+                        "constitution_text": r.constitution_text,
+                        "memory_text": r.memory_text,
+                    },
+                    adapter_state=state,
+                    interview_qa=[
+                        {"question": q, "answer": ans}
+                        for q, ans in zip(INTERVIEW_QUESTIONS, answers)
+                    ],
                 )
             if self.logger is not None:
                 self.logger.log_event(

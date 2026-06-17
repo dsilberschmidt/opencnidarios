@@ -33,11 +33,21 @@ def main():
     world.seed_energy_uniform(cfg["world_energy_lo"], cfg["world_energy_hi"], seed=seed)
 
     adapter_cfg = cfg["adapter"]
-    assert adapter_cfg["type"] == "dummy"
-    llm = DummyAdapter(p_action=adapter_cfg["p_action"], seed=seed)
+    if adapter_cfg["type"] == "dummy":
+        llm = DummyAdapter(p_action=adapter_cfg["p_action"], seed=seed)
+    else:
+        raise NotImplementedError(
+            f"Adapter type '{adapter_cfg['type']}' not yet implemented. "
+            "Only 'dummy' is available."
+        )
 
     run_id = f"{cfg['meta']['date']}_{cfg['meta']['name']}"
-    logger = Logger(out_dir=cfg["out_dir"], run_id=run_id, event_logging=cfg.get("event_logging", False))
+    logger = Logger(
+        out_dir=cfg["out_dir"],
+        run_id=run_id,
+        event_logging=cfg.get("event_logging", False),
+        interview_logging=cfg.get("interview_logging", False),
+    )
 
     engine = Engine(world=world, llm_adapter=llm, params=params, logger=logger)
 
