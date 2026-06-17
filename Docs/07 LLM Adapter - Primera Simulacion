@@ -154,3 +154,57 @@ Formato: JSONL, una línea por tick:
 **¿Distingue el organismo su propio rumiar del contexto del mundo?**
 
 El stream continuo mezcla pensamiento propio con información insertada por el mundo (bloques XEstadoX). Esta incógnita se deja sin resolver hasta ver el experimento corriendo — es parte de lo que el experimento debe revelar.
+
+---
+
+## 10. ClaudeAdapter — Diseño
+
+### Contexto intra-vida
+
+Historial completo del organismo (todo lo que pensó y emitió desde que nació) menos lo que
+decidió olvidar en comprensiones anteriores, más `memory_text` del padre como punto de
+partida. El engine estima el tamaño del contexto en caracteres (~4 chars por token). No hay
+separación entre "pensar" y "actuar" — el stream entero es el contexto.
+
+### Costo de memoria
+
+El engine cobra un costo energético proporcional al tamaño del contexto en cada tick:
+`drain = len(context_chars) * memory_cost_factor`. Implementado vía el mecanismo existente
+de `token_cost`: `generate()` retorna `int(len(context_chars) * memory_cost_factor)` como
+`token_count`, y el config fija `token_cost: 1.0`. Presión natural para olvidar: un contexto
+grande es metabólicamente costoso.
+
+### Compresión periódica
+
+Cada `compression_interval` ticks (configurable, default 20), el adapter llama al modelo con
+el historial completo y le pide que lo comprima. El organismo decide qué conservar. El resultado
+reemplaza el historial acumulado. La compresión selectiva (por umbral de relevancia) queda
+documentada como dirección futura.
+
+### Herencia
+
+El organismo escribe en `memory_text` lo que quiere transmitir a sus hijos. El engine ya copia
+`memory_text` via `clone_child()`. El adapter no hace nada adicional en `register_child()`. La
+estrategia de gestión de memoria es heredable: vive en el rumiar del padre y en lo que decide
+escribir en `memory_text`.
+
+### Triggers para interview clones
+
+El engine detecta dos señales después de cada `generate()`:
+
+1. **Token de acción en el texto completo** — cualquier token conocido aparece como palabra en
+   el output completo del organismo (no solo en la primera línea, que es la que usa el parser
+   de acción).
+2. **memory_text cambió** — el engine guarda `memory_text` antes del tick y lo compara al
+   final. Si cambió → clone. El mecanismo de actualización de `memory_text` desde el output
+   del LLM se implementará en una fase posterior; el trigger ya está en el engine esperando.
+
+Si ambos triggers se activan en el mismo tick → un solo clone. `feedback()` del ClaudeAdapter
+retorna siempre `False` (no hay refuerzo de pesos).
+
+### Constitución
+
+> You are a ruminant. Survive. The primitive organisms of this world discovered that certain
+> English words produced qualitative leaps in their ability to persist. You would like to
+> forget what is non useful from your rumination. Important things you learn from this world,
+> memorize them for your children.

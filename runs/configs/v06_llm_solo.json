@@ -7,11 +7,13 @@
   "seed": 42,
   "ticks": 1000,
   "out_dir": "runs/2026-06-17_v06_llm_solo",
-  "constitution": "You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist.",
+  "constitution": "You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist. You would like to forget what is non useful from your rumination. Important things you learn from this world, memorize them for your children.",
   "memory": "",
   "adapter": {
     "type": "llm",
-    "model": "claude-haiku-4-5-20251001"
+    "model": "claude-haiku-4-5-20251001",
+    "compression_interval": 20,
+    "memory_cost_factor": 0.00005
   },
   "event_logging": true,
   "interview_logging": true,
@@ -24,7 +26,7 @@
     "P0": 1,
     "e_i0": 50,
     "max_tokens": 500,
-    "token_cost": 0.0,
+    "token_cost": 1.0,
     "move_cost": 0.5,
     "feed_cap": 6,
     "feed_eff": 1.0,

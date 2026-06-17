@@ -14,6 +14,7 @@ from src.world import World
 from src.ruminant import Ruminant
 from src.engine import Engine
 from src.llm_adapter.dummy import DummyAdapter
+from src.llm_adapter.claude import ClaudeAdapter
 from src.logger import Logger
 
 
@@ -35,10 +36,15 @@ def main():
     adapter_cfg = cfg["adapter"]
     if adapter_cfg["type"] == "dummy":
         llm = DummyAdapter(p_action=adapter_cfg["p_action"], seed=seed)
+    elif adapter_cfg["type"] == "llm":
+        llm = ClaudeAdapter(
+            model=adapter_cfg.get("model", "claude-haiku-4-5-20251001"),
+            memory_cost_factor=adapter_cfg.get("memory_cost_factor", 0.00005),
+            compression_interval=adapter_cfg.get("compression_interval", 20),
+        )
     else:
         raise NotImplementedError(
-            f"Adapter type '{adapter_cfg['type']}' not yet implemented. "
-            "Only 'dummy' is available."
+            f"Adapter type '{adapter_cfg['type']}' not yet implemented."
         )
 
     run_id = f"{cfg['meta']['date']}_{cfg['meta']['name']}"

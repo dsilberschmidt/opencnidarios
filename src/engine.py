@@ -16,6 +16,11 @@ from typing import List, Dict, Any, Optional
 
 from .llm_adapter.base import INTERVIEW_QUESTIONS
 
+_ACTION_TOKENS = frozenset({
+    "NORTH", "SOUTH", "EAST", "WEST", "REPRODUCE",
+    "EAT", "ATTACK", "PHOTOSYNTHESIZE",
+})
+
 
 @dataclass
 class TickStats:
@@ -73,6 +78,7 @@ class Engine:
         births = deaths = moves = attacks = 0
 
         # 1) Observe + 2) Generate + 3) Parse actions (for all, before applying)
+        prev_memory: Dict[int, str] = {idx: r.memory_text for idx, r in enumerate(self.ruminants)}
         outputs: Dict[int, Dict[str, Any]] = {}
         for idx, r in enumerate(self.ruminants):
             obs = self._build_observation(r)
@@ -90,6 +96,29 @@ class Engine:
                 "tokens": out_tokens,
                 "action": action,
             }
+            # Interview clone triggers
+            trigger_token = any(t in out_text.split() for t in _ACTION_TOKENS)
+            trigger_memory = r.memory_text != prev_memory[idx]
+            if (trigger_token or trigger_memory) and self.logger is not None:
+                answers = self.llm.interview(r.id, INTERVIEW_QUESTIONS)
+                state = self.llm.get_organism_state(r.id)
+                self.logger.write_interview_clone(
+                    tick=self.tick,
+                    organism_id=r.id,
+                    discovery_action="token" if trigger_token else "memory",
+                    ruminant_snapshot={
+                        "tick": self.tick, "x": r.x, "y": r.y,
+                        "energy_internal": r.energy_internal,
+                        "age": r.age, "parent_id": r.parent_id,
+                        "constitution_text": r.constitution_text,
+                        "memory_text": r.memory_text,
+                    },
+                    adapter_state=state,
+                    interview_qa=[
+                        {"question": q, "answer": ans}
+                        for q, ans in zip(INTERVIEW_QUESTIONS, answers)
+                    ],
+                )
 
         # 4) Apply token cost
         token_cost = self.p["token_cost"]
@@ -146,24 +175,6 @@ class Engine:
                     self.logger.log_event(
                         self.tick, "discovery", r.id,
                         action=a, x=r.x, y=r.y, **state,
-                    )
-                    answers = self.llm.interview(r.id, INTERVIEW_QUESTIONS)
-                    self.logger.write_interview_clone(
-                        tick=self.tick,
-                        organism_id=r.id,
-                        discovery_action=a,
-                        ruminant_snapshot={
-                            "tick": self.tick, "x": r.x, "y": r.y,
-                            "energy_internal": r.energy_internal,
-                            "age": r.age, "parent_id": r.parent_id,
-                            "constitution_text": r.constitution_text,
-                            "memory_text": r.memory_text,
-                        },
-                        adapter_state=state,
-                        interview_qa=[
-                            {"question": q, "answer": ans}
-                            for q, ans in zip(INTERVIEW_QUESTIONS, answers)
-                        ],
                     )
 
         # 6.5) Metabolic drain — after feeding so an organism that eats on its last tick survives.
@@ -245,24 +256,6 @@ class Engine:
                 self.logger.log_event(
                     self.tick, "discovery", r.id,
                     action="ATTACK", x=r.x, y=r.y, **state,
-                )
-                answers = self.llm.interview(r.id, INTERVIEW_QUESTIONS)
-                self.logger.write_interview_clone(
-                    tick=self.tick,
-                    organism_id=r.id,
-                    discovery_action="ATTACK",
-                    ruminant_snapshot={
-                        "tick": self.tick, "x": r.x, "y": r.y,
-                        "energy_internal": r.energy_internal,
-                        "age": r.age, "parent_id": r.parent_id,
-                        "constitution_text": r.constitution_text,
-                        "memory_text": r.memory_text,
-                    },
-                    adapter_state=state,
-                    interview_qa=[
-                        {"question": q, "answer": ans}
-                        for q, ans in zip(INTERVIEW_QUESTIONS, answers)
-                    ],
                 )
             if self.logger is not None:
                 self.logger.log_event(
