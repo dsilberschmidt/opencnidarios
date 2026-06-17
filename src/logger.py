@@ -23,6 +23,7 @@ class Logger:
         run_id: str | None = None,
         event_logging: bool = False,
         interview_logging: bool = False,
+        ruminate_logging: bool = False,
     ):
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
@@ -36,6 +37,11 @@ class Logger:
         if event_logging:
             ev_filename = f"events_{run_id}.jsonl" if run_id else "events.jsonl"
             self._jsonl_file = (self.out_dir / ev_filename).open("w", encoding="utf-8")
+
+        self._ruminate_file = None
+        if ruminate_logging:
+            rum_filename = f"ruminate_{run_id}.jsonl" if run_id else "ruminate.jsonl"
+            self._ruminate_file = (self.out_dir / rum_filename).open("w", encoding="utf-8")
 
         self.interview_logging = interview_logging
         self._interviews_dir: Path | None = None
@@ -61,6 +67,24 @@ class Logger:
         record.update(payload)
         self._jsonl_file.write(json.dumps(record) + "\n")
         self._jsonl_file.flush()
+
+    def log_ruminate(
+        self,
+        tick: int,
+        organism_id: str,
+        output_raw: str,
+        action_parsed: str | None,
+    ) -> None:
+        if self._ruminate_file is None:
+            return
+        record = {
+            "tick": tick,
+            "organism_id": organism_id,
+            "output_raw": output_raw,
+            "action_parsed": action_parsed,
+        }
+        self._ruminate_file.write(json.dumps(record) + "\n")
+        self._ruminate_file.flush()
 
     def write_interview_clone(
         self,
@@ -90,3 +114,5 @@ class Logger:
             self._csv_file.close()
         if self._jsonl_file:
             self._jsonl_file.close()
+        if self._ruminate_file:
+            self._ruminate_file.close()

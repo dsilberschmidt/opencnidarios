@@ -61,3 +61,8 @@ class LLMAdapter(ABC):
         """Answer interview questions in read-only mode. Does not alter organism state.
         Real LLM adapters override this to query the model with accumulated context."""
         return ["[no conversational context]"] * len(questions)
+
+    def is_memory_novel(self, memory_text: str, accepted_memories: List[str]) -> bool:
+        """Check if memory_text is semantically distinct from accepted_memories.
+        Default: no filtering — always novel."""
+        return True

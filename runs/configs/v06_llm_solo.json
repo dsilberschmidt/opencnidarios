@@ -5,7 +5,7 @@
     "date": "2026-06-17"
   },
   "seed": 42,
-  "ticks": 1000,
+  "ticks": 5,
   "out_dir": "runs/2026-06-17_v06_llm_solo",
   "constitution": "You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist. You would like to forget what is non useful from your rumination. Important things you learn from this world, memorize them for your children.",
   "memory": "",
@@ -17,6 +17,7 @@
   },
   "event_logging": true,
   "interview_logging": true,
+  "ruminate_logging": true,
   "world_energy_lo": 15,
   "world_energy_hi": 20,
   "params": {

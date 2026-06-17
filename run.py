@@ -53,6 +53,7 @@ def main():
         run_id=run_id,
         event_logging=cfg.get("event_logging", False),
         interview_logging=cfg.get("interview_logging", False),
+        ruminate_logging=cfg.get("ruminate_logging", False),
     )
 
     engine = Engine(world=world, llm_adapter=llm, params=params, logger=logger)

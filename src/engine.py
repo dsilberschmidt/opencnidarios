@@ -10,6 +10,7 @@ Spec references:
 from __future__ import annotations
 
 import random
+import re
 from collections import Counter
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
@@ -20,6 +21,8 @@ _ACTION_TOKENS = frozenset({
     "NORTH", "SOUTH", "EAST", "WEST", "REPRODUCE",
     "EAT", "ATTACK", "PHOTOSYNTHESIZE",
 })
+
+_MEMORY_PATTERN = re.compile(r"^MEMORY:\s*(.*)$", re.MULTILINE)
 
 
 @dataclass
@@ -41,6 +44,8 @@ class Engine:
         self.logger = logger
         self.ruminants: List[Any] = []
         self.tick = 0
+        self.triggered_tokens: Dict[str, set] = {}
+        self.accepted_memories: List[str] = []
 
     def seed_population(self, ruminants: List[Any]) -> None:
         self.ruminants = list(ruminants)
@@ -96,16 +101,40 @@ class Engine:
                 "tokens": out_tokens,
                 "action": action,
             }
+            if self.logger is not None:
+                self.logger.log_ruminate(self.tick, r.id, out_text, action)
+
+            memory_matches = _MEMORY_PATTERN.findall(out_text or "")
+            if memory_matches:
+                r.memory_text = " ".join(m.strip() for m in memory_matches)
+                print(f"[memory] {r.id[:8]} tick={self.tick} memory_text={r.memory_text!r}")
+
             # Interview clone triggers
-            trigger_token = any(t in out_text.split() for t in _ACTION_TOKENS)
+            seen_tokens = self.triggered_tokens.setdefault(r.id, set())
+            tokens_in_text = set(out_text.split()) & _ACTION_TOKENS
+            new_tokens = tokens_in_text - seen_tokens
+            trigger_token = bool(new_tokens)
+            seen_tokens.update(tokens_in_text)
+            if trigger_token:
+                print(f"[discovery] {r.id[:8]} tick={self.tick} token={','.join(sorted(new_tokens))}")
+
             trigger_memory = r.memory_text != prev_memory[idx]
+            if trigger_memory:
+                is_novel = self.llm.is_memory_novel(r.memory_text, self.accepted_memories)
+                if is_novel:
+                    self.accepted_memories.append(r.memory_text)
+                    print(f"[memory-novel] {r.id[:8]} tick={self.tick}")
+                trigger_memory = is_novel
+
             if (trigger_token or trigger_memory) and self.logger is not None:
+                trigger_type = "token" if trigger_token else "memory"
+                print(f"[interview-clone] {r.id[:8]} tick={self.tick} trigger={trigger_type}")
                 answers = self.llm.interview(r.id, INTERVIEW_QUESTIONS)
                 state = self.llm.get_organism_state(r.id)
                 self.logger.write_interview_clone(
                     tick=self.tick,
                     organism_id=r.id,
-                    discovery_action="token" if trigger_token else "memory",
+                    discovery_action=trigger_type,
                     ruminant_snapshot={
                         "tick": self.tick, "x": r.x, "y": r.y,
                         "energy_internal": r.energy_internal,
@@ -208,6 +237,7 @@ class Engine:
                 self.llm.register_child(child.id, r.id)
                 new_children.append(child)
                 births += 1
+                print(f"[birth] {child.id[:8]} tick={self.tick} parent={r.id[:8]}")
                 if self.logger is not None:
                     state = self.llm.get_organism_state(child.id)
                     self.logger.log_event(
@@ -279,9 +309,10 @@ class Engine:
                 alive.append(r)
             else:
                 deaths += 1
+                cause = "attacked" if r.id in killed else "starvation"
+                print(f"[death] {r.id[:8]} tick={self.tick} cause={cause}")
                 if self.logger is not None:
                     state = self.llm.get_organism_state(r.id)
-                    cause = "attacked" if r.id in killed else "starvation"
                     self.logger.log_event(
                         self.tick, "death", r.id,
                         cause=cause, age=r.age, x=r.x, y=r.y, **state,
@@ -306,6 +337,7 @@ class Engine:
             attacks=attacks,
             mean_internal_energy=float(mean_e),
         )
+        print(f"[tick {stats.tick}] pop={stats.population} mean_e={stats.mean_internal_energy:.2f}")
         if self.logger is not None:
             self.logger.log_tick(stats)
 

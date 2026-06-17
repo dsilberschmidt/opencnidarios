@@ -152,6 +152,24 @@ class ClaudeAdapter(LLMAdapter):
             return [p.strip() for p in parts[1: len(questions) + 1]]
         return [text] + [""] * (len(questions) - 1)
 
+    def is_memory_novel(self, memory_text: str, accepted_memories: List[str]) -> bool:
+        if not accepted_memories:
+            return True
+        memories_list = "\n".join(f"- {m}" for m in accepted_memories)
+        prompt = (
+            f"New memory:\n{memory_text}\n\n"
+            f"Existing memories:\n{memories_list}\n\n"
+            "Is this memory semantically distinct from all the others in this list? "
+            "Answer only YES or NO."
+        )
+        response = self._client.messages.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=10,
+        )
+        answer = response.content[0].text.strip().upper()
+        return "YES" in answer
+
     def get_organism_state(self, organism_id: str) -> dict:
         state = self._states.get(organism_id, {})
         return {
