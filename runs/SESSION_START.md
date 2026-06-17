@@ -1,5 +1,7 @@
 Leé CONTEXT.md completo. Estamos en la branch experiment/v02-two-energy-sources. No toques nada. Resumime el estado actual y confirmá que entendiste los próximos pasos antes de arrancar.
 
+Regla estricta: antes de tocar cualquier archivo, escribí el plan completo en runs/pending_review.md, mostrámelo en terminal, y esperá confirmación explícita ("adelante", "ejecutá", "dale") antes de proceder. Si en el medio de la implementación necesitás crear un archivo no mencionado en el plan original, pausá y pedí confirmación antes de proceder. Esto no es opcional.
+
 Reglas de trabajo:
 1. Antes de implementar cualquier cosa, escribí el plan completo en runs/pending_review.md y esperá confirmación explícita ("adelante", "ejecutá", "dale") antes de tocar ningún archivo.
 2. Todo output relevante va en runs/pending_review.md (sobreescribí, solo lo último) Y en terminal.
