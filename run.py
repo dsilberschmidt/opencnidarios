@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+from datetime import datetime
 
 from src.world import World
 from src.ruminant import Ruminant
@@ -21,10 +22,17 @@ from src.logger import Logger
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="Path to run config JSON")
+    parser.add_argument("--ticks", type=int, default=None, help="Override cfg['ticks']")
+    parser.add_argument("--population", type=int, default=None, help="Override cfg['params']['P0']")
     args = parser.parse_args()
 
     with open(args.config) as f:
         cfg = json.load(f)
+
+    if args.ticks is not None:
+        cfg["ticks"] = args.ticks
+    if args.population is not None:
+        cfg["params"]["P0"] = args.population
 
     params = cfg["params"]
     seed = cfg["seed"]
@@ -48,8 +56,9 @@ def main():
         )
 
     run_id = f"{cfg['meta']['date']}_{cfg['meta']['name']}"
+    out_dir = f"{cfg['out_dir']}_{datetime.now().strftime('%H%M%S')}"
     logger = Logger(
-        out_dir=cfg["out_dir"],
+        out_dir=out_dir,
         run_id=run_id,
         event_logging=cfg.get("event_logging", False),
         interview_logging=cfg.get("interview_logging", False),
