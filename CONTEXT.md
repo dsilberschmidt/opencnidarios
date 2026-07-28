@@ -286,6 +286,12 @@ Hallazgos clave:
 - 7418a3dd intuyó CONSUME en tick 3 pero nunca usó la palabra correcta. Sobrevivió 178 ticks en inmovilidad casi total.
 - Counter de action_parsed: {None: 412, NORTH: 56, EAST: 16, WEST: 3, SOUTH: 2}.
 
+> **Nota (2026-07-28):** los conteos de action_parsed de arriba corresponden al
+> parser vigente al momento del run. Un fix posterior al parser (branch
+> experiment/parser-fixes, commit cebea26) cambia esos números si se
+> re-parsea offline — ver runs/2026-06-17_v06_llm_solo_184001/NOTES.md para
+> el detalle y por qué el relato original sigue siendo correcto.
+
 ### Problema identificado: feedback de movimiento no funciona
 
 `feedback()` mide únicamente el delta inmediato de energía del feeding. Moverse
