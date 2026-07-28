@@ -22,6 +22,8 @@ class Ruminant:
     age: int = 0
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     parent_id: str | None = None
+    instance_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    forked_from: dict | None = None
 
     def step_age(self) -> None:
         self.age += 1
