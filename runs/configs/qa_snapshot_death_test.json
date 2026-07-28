@@ -1,0 +1,42 @@
+{
+  "meta": {
+    "name": "qa_snapshot_death_test",
+    "description": "QA: fuerza inanición temprana para verificar snapshot cause=death. e_i0=2 para que al menos un organismo muera antes del tick 15. No es un experimento — material de prueba del mecanismo de snapshot.",
+    "date": "2026-07-28"
+  },
+  "seed": 42,
+  "ticks": 15,
+  "out_dir": "runs/qa_snapshot_death_test",
+  "constitution": "You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist. You would like to forget what is non useful from your rumination. Important things you learn from this world, memorize them for your children.",
+  "memory": "",
+  "adapter": {
+    "type": "llm",
+    "model": "claude-haiku-4-5-20251001",
+    "compression_interval": 20,
+    "memory_cost_factor": 0.00005
+  },
+  "event_logging": true,
+  "interview_logging": true,
+  "ruminate_logging": true,
+  "world_energy_lo": 15,
+  "world_energy_hi": 20,
+  "params": {
+    "N": 32,
+    "e_max_internal": 100,
+    "regen_rate": 0.5,
+    "P0": 2,
+    "e_i0": 2,
+    "max_tokens": 500,
+    "token_cost": 1.0,
+    "move_cost": 0.5,
+    "feed_cap": 6,
+    "feed_eff": 1.0,
+    "base_metabolic_cost": 0.2,
+    "photo_energy": 4.0,
+    "attack_efficiency": 0.8,
+    "repro_threshold": 60,
+    "repro_cost": 4,
+    "child_e0": 10,
+    "P_max": 5
+  }
+}
