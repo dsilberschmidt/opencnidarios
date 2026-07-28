@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 def write_snapshot(
     r: "Ruminant",
-    cause: str,  # "starvation" | "attacked" | "end_of_run" | "crash"
+    cause: str,  # "starvation" | "attacked" | "end_of_run" | "crash" | "checkpoint"
     run_id: str,
     tick: int,
     adapter: "LLMAdapter",
