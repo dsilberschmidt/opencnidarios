@@ -17,6 +17,7 @@ from src.engine import Engine
 from src.llm_adapter.dummy import DummyAdapter
 from src.llm_adapter.claude import ClaudeAdapter
 from src.logger import Logger
+from src.snapshot import write_snapshot
 
 
 def main():
@@ -57,6 +58,8 @@ def main():
 
     run_id = f"{cfg['meta']['date']}_{cfg['meta']['name']}"
     out_dir = f"{cfg['out_dir']}_{datetime.now().strftime('%H%M%S')}"
+    organisms_dir = "organisms"
+
     logger = Logger(
         out_dir=out_dir,
         run_id=run_id,
@@ -65,7 +68,8 @@ def main():
         ruminate_logging=cfg.get("ruminate_logging", False),
     )
 
-    engine = Engine(world=world, llm_adapter=llm, params=params, logger=logger)
+    engine = Engine(world=world, llm_adapter=llm, params=params, logger=logger,
+                    organisms_dir=organisms_dir, run_id=run_id)
 
     ruminants = []
     for _ in range(params["P0"]):
@@ -82,12 +86,23 @@ def main():
 
     engine.seed_population(ruminants)
 
-    for _ in range(cfg["ticks"]):
-        stats = engine.step()
-        if stats.population == 0:
-            break
-
-    logger.close()
+    try:
+        for _ in range(cfg["ticks"]):
+            stats = engine.step()
+            if stats.population == 0:
+                break
+        for r in engine.ruminants:
+            write_snapshot(r, cause="end_of_run", run_id=run_id,
+                           tick=engine.tick, adapter=llm,
+                           organisms_dir=organisms_dir)
+    except Exception:
+        for r in engine.ruminants:
+            write_snapshot(r, cause="crash", run_id=run_id,
+                           tick=engine.tick, adapter=llm,
+                           organisms_dir=organisms_dir)
+        raise
+    finally:
+        logger.close()
 
 
 if __name__ == "__main__":

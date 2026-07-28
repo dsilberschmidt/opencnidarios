@@ -26,6 +26,8 @@ INTERVIEW_QUESTIONS: List[str] = [
 
 
 class LLMAdapter(ABC):
+    adapter_type: str = "unknown"
+
     @abstractmethod
     def generate(
         self,
@@ -66,3 +68,8 @@ class LLMAdapter(ABC):
         """Check if memory_text is semantically distinct from accepted_memories.
         Default: no filtering — always novel."""
         return True
+
+    def export_full_state(self, organism_id: str) -> dict | None:
+        """Full adapter state for organism persistence (history, constitution, etc.).
+        Returns None if this adapter does not support snapshots."""
+        return None

@@ -23,6 +23,8 @@ _RETRY_DELAYS = (2, 4, 8, 60, 180)
 
 
 class ClaudeAdapter(LLMAdapter):
+    adapter_type = "claude"
+
     def __init__(
         self,
         model: str = "claude-haiku-4-5-20251001",
@@ -184,6 +186,18 @@ class ClaudeAdapter(LLMAdapter):
         ))
         answer = response.content[0].text.strip().upper()
         return "YES" in answer
+
+    def export_full_state(self, organism_id: str) -> dict | None:
+        state = self._states.get(organism_id)
+        if state is None:
+            return None
+        return {
+            "history":           list(state["history"]),
+            "constitution":      state["constitution"],
+            "tick_count":        state["tick_count"],
+            "compression_count": state["compression_count"],
+            "context_chars":     state["context_chars"],
+        }
 
     def get_organism_state(self, organism_id: str) -> dict:
         state = self._states.get(organism_id, {})

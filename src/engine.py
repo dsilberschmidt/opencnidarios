@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
 from .llm_adapter.base import INTERVIEW_QUESTIONS
+from .snapshot import write_snapshot
 
 _ACTION_TOKENS = frozenset({
     "NORTH", "SOUTH", "EAST", "WEST", "REPRODUCE",
@@ -37,11 +38,14 @@ class TickStats:
 
 
 class Engine:
-    def __init__(self, world, llm_adapter, params: Dict[str, Any], logger=None):
+    def __init__(self, world, llm_adapter, params: Dict[str, Any], logger=None,
+                 organisms_dir: Optional[str] = None, run_id: str = ""):
         self.world = world
         self.llm = llm_adapter
         self.p = params
         self.logger = logger
+        self.organisms_dir = organisms_dir
+        self.run_id = run_id
         self.ruminants: List[Any] = []
         self.tick = 0
         self.triggered_tokens: Dict[str, set] = {}
@@ -336,6 +340,10 @@ class Engine:
                         self.tick, "death", r.id,
                         cause=cause, age=r.age, x=r.x, y=r.y, **state,
                     )
+                if self.organisms_dir is not None:
+                    write_snapshot(r, cause=cause, run_id=self.run_id,
+                                   tick=self.tick, adapter=self.llm,
+                                   organisms_dir=self.organisms_dir)
         self.ruminants = alive
 
         # 9.5) Update last_actions for organisms still alive
