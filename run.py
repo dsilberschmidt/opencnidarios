@@ -86,15 +86,28 @@ def main():
 
     engine.seed_population(ruminants)
 
+    checkpoint_every = cfg.get("checkpoint_every")
+
     try:
         for _ in range(cfg["ticks"]):
             stats = engine.step()
             if stats.population == 0:
                 break
-        for r in engine.ruminants:
-            write_snapshot(r, cause="end_of_run", run_id=run_id,
-                           tick=engine.tick, adapter=llm,
-                           organisms_dir=organisms_dir)
+            if (checkpoint_every is not None
+                    and engine.tick % checkpoint_every == 0
+                    and engine.tick < cfg["ticks"]):
+                print(f"[checkpoint] tick={engine.tick} pop={stats.population} "
+                      f"mean_e={stats.mean_internal_energy:.2f}")
+                for r in engine.ruminants:
+                    write_snapshot(r, cause="checkpoint", run_id=run_id,
+                                   tick=engine.tick, adapter=llm,
+                                   organisms_dir=organisms_dir)
+                break
+        else:
+            for r in engine.ruminants:
+                write_snapshot(r, cause="end_of_run", run_id=run_id,
+                               tick=engine.tick, adapter=llm,
+                               organisms_dir=organisms_dir)
     except Exception:
         for r in engine.ruminants:
             write_snapshot(r, cause="crash", run_id=run_id,
