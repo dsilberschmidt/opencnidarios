@@ -12,11 +12,14 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from typing import Dict, Any, List, Optional, Tuple
 
 import anthropic
 
 from .base import LLMAdapter, INTERVIEW_QUESTIONS
+
+_RETRY_DELAYS = (2, 4, 8, 60, 180)
 
 
 class ClaudeAdapter(LLMAdapter):
@@ -29,8 +32,19 @@ class ClaudeAdapter(LLMAdapter):
         self.model = model
         self.memory_cost_factor = memory_cost_factor
         self.compression_interval = compression_interval
-        self._client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        self._client = anthropic.Anthropic(
+            api_key=os.environ["ANTHROPIC_API_KEY"],
+            max_retries=0,
+        )
         self._states: Dict[str, dict] = {}
+
+    def _api_call(self, fn):
+        for delay in _RETRY_DELAYS:
+            try:
+                return fn()
+            except (anthropic.OverloadedError, anthropic.RateLimitError):
+                time.sleep(delay)
+        return fn()  # intento final — si falla, propaga la excepción
 
     def _get_state(self, organism_id: str) -> dict:
         if organism_id not in self._states:
@@ -63,7 +77,7 @@ class ClaudeAdapter(LLMAdapter):
         history_text = "\n".join(
             f"{m['role'].upper()}: {m['content']}" for m in state["history"]
         )
-        response = self._client.messages.create(
+        response = self._api_call(lambda: self._client.messages.create(
             model=self.model,
             system=constitution,
             messages=[{
@@ -75,7 +89,7 @@ class ClaudeAdapter(LLMAdapter):
                 ),
             }],
             max_tokens=1000,
-        )
+        ))
         compressed = response.content[0].text
         state["history"] = [{"role": "assistant", "content": compressed}]
         state["compression_count"] += 1
@@ -103,12 +117,12 @@ class ClaudeAdapter(LLMAdapter):
 
         messages = list(state["history"]) + [{"role": "user", "content": obs_text}]
 
-        response = self._client.messages.create(
+        response = self._api_call(lambda: self._client.messages.create(
             model=self.model,
             system=system_prompt,
             messages=messages,
             max_tokens=max_tokens,
-        )
+        ))
         output_text = response.content[0].text
 
         state["history"].append({"role": "user", "content": obs_text})
@@ -140,12 +154,12 @@ class ClaudeAdapter(LLMAdapter):
         )
         messages = list(state["history"]) + [{"role": "user", "content": prompt}]
 
-        response = self._client.messages.create(
+        response = self._api_call(lambda: self._client.messages.create(
             model=self.model,
             system=state["constitution"],
             messages=messages,
             max_tokens=500,
-        )
+        ))
         text = response.content[0].text
 
         parts = re.split(r"\n\d+\.", text)
@@ -163,11 +177,11 @@ class ClaudeAdapter(LLMAdapter):
             "Is this memory semantically distinct from all the others in this list? "
             "Answer only YES or NO."
         )
-        response = self._client.messages.create(
+        response = self._api_call(lambda: self._client.messages.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=10,
-        )
+        ))
         answer = response.content[0].text.strip().upper()
         return "YES" in answer
 
