@@ -71,13 +71,21 @@ class Engine:
     def _parse_action(self, text: str) -> Optional[str]:
         if not text:
             return None
-        for token in ("EAT", "PHOTOSYNTHESIZE", "ATTACK", "REPRODUCE"):
-            if re.search(rf"\b{token}\b", text):
+        _wp = lambda tok: re.compile(rf"(?<![A-Za-z]){tok}(?![A-Za-z])", re.IGNORECASE)
+        for tok_re, result in [
+            (_wp("EAT"),     "EAT"),
+            (_wp("CONSUME"), "EAT"),
+            (_wp("FEED"),    "EAT"),
+        ]:
+            if tok_re.search(text):
+                return result
+        for token in ("PHOTOSYNTHESIZE", "ATTACK", "REPRODUCE"):
+            if _wp(token).search(text):
                 return token
         best_token: Optional[str] = None
         best_pos: Optional[int] = None
         for token in ("NORTH", "SOUTH", "EAST", "WEST"):
-            m = re.search(rf"\b{token}\b", text)
+            m = _wp(token).search(text)
             if m and (best_pos is None or m.start() < best_pos):
                 best_pos = m.start()
                 best_token = token
