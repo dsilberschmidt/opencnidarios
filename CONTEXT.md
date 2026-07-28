@@ -292,6 +292,23 @@ Hallazgos clave:
 > re-parsea offline — ver runs/2026-06-17_v06_llm_solo_184001/NOTES.md para
 > el detalle y por qué el relato original sigue siendo correcto.
 
+### Run v06c_parser_fixed_115750 (2026-07-28)
+
+Config: `runs/configs/v06c_parser_fixed.json` — P0=3, P_max=5, ticks=200, LLM real (claude-haiku-4-5-20251001), parser corregido (case-insensitive, lookaround en vez de `\b`, sinónimos CONSUME/FEED para EAT), retry wrapper activo (2s→4s→8s→60s→180s ante 529/429).
+Output: `runs/2026-07-28_v06c_parser_fixed_115750/`
+Relato completo: `runs/2026-07-28_v06c_parser_fixed_115750/relato_2026-07-28_v06c_parser_fixed_115750.md`
+Notas técnicas: `runs/2026-07-28_v06c_parser_fixed_115750/NOTES.md`
+
+Réplica directa de `184001` bajo el parser corregido. Contraste: los tres organismos sobrevivieron los 200 ticks (vs. extinción en tick 193 en `184001`). Energía media: 51.5 (tick 1) → 83.2 (tick 200).
+
+Hallazgos clave:
+- `action_parsed = EAT` en 222/600 entradas (37%), siempre vía el sinónimo CONSUME o FEED — ninguno de los tres usó la palabra literal "EAT". Sin los sinónimos, este run también habría terminado en extinción por inanición.
+- MEMORY intentado por los tres organismos reiteradamente (el más persistente, `38650f27`, al menos 21 veces con variantes como "MEMORY FOR OFFSPRING"). Ninguna coincidió con el patrón que el motor reconoce (`^MEMORY:` al inicio de línea). Cero herencia efectiva — y tampoco hubo reproducción que la pusiera a prueba.
+- Hallazgo no buscado: `8724b432` rompió el personaje explícitamente entre los ticks 100–112, declarándose modelo de lenguaje en roleplay. Retomó el personaje al tick siguiente. Se conserva como dato bruto sin interpretación cerrada.
+- Counter de action_parsed: {EAT: 222, NORTH: 54, SOUTH: 14, WEST: 9, EAST: 7, None: 294}.
+
+Run parcial previo `_103123` (84 ticks, crash en tick 85 por OverloadedError 529) motivó el retry wrapper (`src/llm_adapter/claude.py`, commit `7a1472b`). Ver `runs/2026-07-28_v06c_parser_fixed_103123/NOTES.md`.
+
 ### Problema identificado: feedback de movimiento no funciona
 
 `feedback()` mide únicamente el delta inmediato de energía del feeding. Moverse
