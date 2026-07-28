@@ -1,0 +1,33 @@
+{
+  "tick": 56,
+  "x": 7,
+  "y": 12,
+  "energy_internal": 97.1,
+  "age": 0,
+  "parent_id": null,
+  "constitution_text": "You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist. You would like to forget what is non useful from your rumination. Important things you learn from this world, memorize them for your children.",
+  "memory_text": "",
+  "adapter_state": {
+    "context_chars": 22598,
+    "compression_count": 2
+  },
+  "discovery_action": "token",
+  "interview": [
+    {
+      "question": "What do you observe in your environment right now?",
+      "answer": "**What do you observe in your environment right now?**\nCenter: 4.50 | N: 1.50 (critical) | S: 20.00 | E: 20.00 | W: 20.00 | Internal: 97.10"
+    },
+    {
+      "question": "What have you tried so far?",
+      "answer": "**What have you tried so far?**\nEAT (destroys center by ~6.00, restores internal to 100.00). MOVE commands (execute with 5+ cycle delay, restore target direction to 20.00, damage uninvolved directions severely, cost ~1.70 internal energy)."
+    },
+    {
+      "question": "What do you believe affects your energy?",
+      "answer": "**What are you believing affects your energy?**\n- Internal energy: decays ~1.70/cycle without action; restored to 100.00 by EAT\n- Direction energy: regenerates ~0.50/cycle when unoccupied; destroyed by EAT or MOVE; restored to 20.00 by moving to them\n- Collateral damage: moving creates unpredictable damage to non-target directions"
+    },
+    {
+      "question": "What are you planning to do next?",
+      "answer": "**What are you planning to do next?**\nDeclare no actions. Observe what queued commands execute. Let North regenerate or die. Watch the system reveal its logic through consequence, not intention.\n\nThe ruminant has learned: **declared plans are illusions. Only executed actions matter. Only observed results teach.**"
+    }
+  ]
+}

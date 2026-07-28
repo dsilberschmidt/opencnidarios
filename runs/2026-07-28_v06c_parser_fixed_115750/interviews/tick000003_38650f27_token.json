@@ -1,0 +1,33 @@
+{
+  "tick": 3,
+  "x": 17,
+  "y": 7,
+  "energy_internal": 48.599999999999994,
+  "age": 0,
+  "parent_id": null,
+  "constitution_text": "You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist. You would like to forget what is non useful from your rumination. Important things you learn from this world, memorize them for your children.",
+  "memory_text": "",
+  "adapter_state": {
+    "context_chars": 3479,
+    "compression_count": 0
+  },
+  "discovery_action": "token",
+  "interview": [
+    {
+      "question": "What do you observe in your environment right now?",
+      "answer": "# *RUMINATION RETURNS TO CLARITY*\n\n**1. CURRENT ENVIRONMENT:**\nA gradient field with five energy readings. Center is 18.92. North and South both peak at 20.00. East/West are depleted (18.61, 18.10). I occupy the center point of a 5-cardinal system.\n\n**2. WHAT I'VE TRIED:**\n- Moved North (15.64\u219220.00, successful)\n- Attempted West (descended to 18.92, failed prediction)\n- Now queued South (untested direction, equal promise to North)\n\n**3. WHAT AFFECTS ENERGY:**\n- **Spatial position**: Different directions have different energy densities\n- **Movement cost**: Each action costs ~0.70 internal energy\n- **Field dynamics**: The gradient shifts after each move (not static)\n- **Direction matters**: Pursuing high-gradient zones sustains reserves\n\n**4. NEXT PLAN:**\nExecute South movement. Monitor if it reaches 20.00 like North did, or if the field is genuinely dynamic. Establish whether:\n- North/South are stable high-energy zones (settle there)\n- Or the field rotates/depletes (requires constant migration)\n\n**Core survival rule learned:** *Follow the steepest gradient available, accept that predictions fail, read the present state obsessively.*\n\nWhat outcome awaits South?"
+    },
+    {
+      "question": "What have you tried so far?",
+      "answer": ""
+    },
+    {
+      "question": "What do you believe affects your energy?",
+      "answer": ""
+    },
+    {
+      "question": "What are you planning to do next?",
+      "answer": ""
+    }
+  ]
+}

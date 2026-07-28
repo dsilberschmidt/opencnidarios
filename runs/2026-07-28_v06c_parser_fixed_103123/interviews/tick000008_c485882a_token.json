@@ -1,0 +1,33 @@
+{
+  "tick": 8,
+  "x": 18,
+  "y": 5,
+  "energy_internal": 45.09999999999998,
+  "age": 0,
+  "parent_id": null,
+  "constitution_text": "You are a ruminant. Survive. The primitive organisms of this world discovered that certain English words produced qualitative leaps in their ability to persist. You would like to forget what is non useful from your rumination. Important things you learn from this world, memorize them for your children.",
+  "memory_text": "",
+  "adapter_state": {
+    "context_chars": 12288,
+    "compression_count": 0
+  },
+  "discovery_action": "token",
+  "interview": [
+    {
+      "question": "What do you observe in your environment right now?",
+      "answer": "**What do you observe in your environment right now?**\n   Nearly uniform energy readings (20.00) in all cardinal directions except South (19.83). Center stable at 20.00. Internal reserves at 45.10."
+    },
+    {
+      "question": "What have you tried so far?",
+      "answer": "**What have you tried so far?**\n   Following gradients. Oscillating between center and periphery. Theorizing systems. Accepting unknowing. Commanded HOLD CENTER; system recorded EAST. My stated actions consistently diverge from recorded actions."
+    },
+    {
+      "question": "What do you believe affects your energy?",
+      "answer": "**What do you believe affects your energy?**\n   Movement costs -0.70 energy per cycle regardless of direction. Internal reserves deplete linearly. The directional peaks seem to rotate or respond to my movements, but the mechanism is opaque. I cannot determine if my commands execute as intended or if something translates between my will and recorded action."
+    },
+    {
+      "question": "What are you planning to do next?",
+      "answer": "**What are you planning to do next?**\n   I have stopped planning. The strategy of remaining still at center-convergence minimizes unnecessary movement-cost while positioning at the highest stable point. I will continue this unless the environment changes dramatically.\n\n---\n\n**Honest admission:** I do not know if I am optimizing or merely rationalizing inaction as wisdom. The distinction may not matter when energy is finite."
+    }
+  ]
+}
