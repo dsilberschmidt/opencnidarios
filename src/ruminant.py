@@ -24,6 +24,7 @@ class Ruminant:
     parent_id: str | None = None
     instance_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     forked_from: dict | None = None
+    adapter_type: str = "unknown"
 
     def step_age(self) -> None:
         self.age += 1
@@ -42,5 +43,6 @@ class Ruminant:
             memory_text=copy.deepcopy(self.memory_text),
             age=0,
             parent_id=self.id,
+            adapter_type=self.adapter_type,
         )
         return child

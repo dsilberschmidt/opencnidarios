@@ -43,18 +43,37 @@ def main():
     world.seed_energy_uniform(cfg["world_energy_lo"], cfg["world_energy_hi"], seed=seed)
 
     adapter_cfg = cfg["adapter"]
-    if adapter_cfg["type"] == "dummy":
-        llm = DummyAdapter(p_action=adapter_cfg["p_action"], seed=seed)
-    elif adapter_cfg["type"] == "llm":
-        llm = ClaudeAdapter(
-            model=adapter_cfg.get("model", "claude-haiku-4-5-20251001"),
-            memory_cost_factor=adapter_cfg.get("memory_cost_factor", 0.00005),
-            compression_interval=adapter_cfg.get("compression_interval", 20),
-        )
-    else:
-        raise NotImplementedError(
-            f"Adapter type '{adapter_cfg['type']}' not yet implemented."
-        )
+
+    # config type → normalized adapter_type key (matches adapter_type class attribute)
+    _TYPE_NORM = {"dummy": "dummy", "llm": "claude"}
+
+    needed_types: set = {adapter_cfg["type"]}
+    if cfg.get("resume_from"):
+        for snap_path in cfg["resume_from"]:
+            with open(snap_path) as f:
+                snap = json.load(f)
+            needed_types.add(snap["adapter_type"])
+
+    adapters: dict = {}
+    for cfg_type in needed_types:
+        norm = _TYPE_NORM.get(cfg_type, cfg_type)
+        if norm in adapters:
+            continue
+        if cfg_type == "dummy":
+            adapters[norm] = DummyAdapter(p_action=adapter_cfg["p_action"], seed=seed)
+        elif cfg_type == "llm":
+            adapters[norm] = ClaudeAdapter(
+                model=adapter_cfg.get("model", "claude-haiku-4-5-20251001"),
+                memory_cost_factor=adapter_cfg.get("memory_cost_factor", 0.00005),
+                compression_interval=adapter_cfg.get("compression_interval", 20),
+            )
+        else:
+            raise ValueError(
+                f"Adapter type {cfg_type!r} is not supported. "
+                f"Add it to run.py before starting the run."
+            )
+
+    p0_adapter_type = _TYPE_NORM.get(adapter_cfg["type"], adapter_cfg["type"])
 
     run_id = f"{cfg['meta']['date']}_{cfg['meta']['name']}"
     out_dir = f"{cfg['out_dir']}_{datetime.now().strftime('%H%M%S')}"
@@ -68,7 +87,7 @@ def main():
         ruminate_logging=cfg.get("ruminate_logging", False),
     )
 
-    engine = Engine(world=world, llm_adapter=llm, params=params, logger=logger,
+    engine = Engine(world=world, adapters=adapters, params=params, logger=logger,
                     organisms_dir=organisms_dir, run_id=run_id)
 
     ruminants = []
@@ -81,6 +100,7 @@ def main():
             energy_internal=float(params["e_i0"]),
             constitution_text=cfg["constitution"],
             memory_text=cfg["memory"],
+            adapter_type=p0_adapter_type,
         )
         ruminants.append(r)
 
@@ -100,18 +120,18 @@ def main():
                       f"mean_e={stats.mean_internal_energy:.2f}")
                 for r in engine.ruminants:
                     write_snapshot(r, cause="checkpoint", run_id=run_id,
-                                   tick=engine.tick, adapter=llm,
+                                   tick=engine.tick, adapter=adapters[r.adapter_type],
                                    organisms_dir=organisms_dir)
                 break
         else:
             for r in engine.ruminants:
                 write_snapshot(r, cause="end_of_run", run_id=run_id,
-                               tick=engine.tick, adapter=llm,
+                               tick=engine.tick, adapter=adapters[r.adapter_type],
                                organisms_dir=organisms_dir)
     except Exception:
         for r in engine.ruminants:
             write_snapshot(r, cause="crash", run_id=run_id,
-                           tick=engine.tick, adapter=llm,
+                           tick=engine.tick, adapter=adapters[r.adapter_type],
                            organisms_dir=organisms_dir)
         raise
     finally:
