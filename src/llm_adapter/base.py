@@ -73,3 +73,8 @@ class LLMAdapter(ABC):
         """Full adapter state for organism persistence (history, constitution, etc.).
         Returns None if this adapter does not support snapshots."""
         return None
+
+    def restore_state(self, organism_id: str, state: dict) -> None:
+        """Restore adapter internal state for a resumed organism.
+        No-op for adapters that don't support snapshots (e.g. DummyAdapter)."""
+        pass

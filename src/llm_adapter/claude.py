@@ -208,6 +208,15 @@ class ClaudeAdapter(LLMAdapter):
             "context_chars":     state["context_chars"],
         }
 
+    def restore_state(self, organism_id: str, state: dict) -> None:
+        self._states[organism_id] = {
+            "history":           list(state["history"]),
+            "constitution":      state["constitution"],
+            "tick_count":        state["tick_count"],
+            "compression_count": state["compression_count"],
+            "context_chars":     state["context_chars"],
+        }
+
     def get_organism_state(self, organism_id: str) -> dict:
         state = self._states.get(organism_id, {})
         return {
