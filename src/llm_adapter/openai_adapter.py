@@ -1,12 +1,4 @@
-"""ClaudeAdapter — LLM adapter real para OpenCnidarios.
-
-Cada organismo mantiene un historial de mensajes user/assistant que crece tick a tick.
-El historial es el "rumiar" acumulado del organismo. generate() lo extiende; _compress()
-lo poda periódicamente a petición del mismo modelo.
-
-Costo de memoria: generate() retorna int(len(context_chars) * memory_cost_factor) como
-token_count. Con token_cost=1.0 en el config, el engine drena esa cantidad de energía.
-"""
+"""OpenAIAdapter — LLM adapter OpenAI para OpenCnidarios."""
 
 from __future__ import annotations
 
@@ -15,20 +7,20 @@ import re
 import time
 from typing import Dict, Any, List, Optional, Tuple
 
-import anthropic
+import openai
 
 from .base import LLMAdapter, INTERVIEW_QUESTIONS
 
 _RETRY_DELAYS = (2, 4, 8, 60, 180)
 
 
-class ClaudeAdapter(LLMAdapter):
-    adapter_type = "claude"
+class OpenAIAdapter(LLMAdapter):
+    adapter_type = "openai"
     supports_token_cost_metric = True
 
     def __init__(
         self,
-        model: str = "claude-haiku-4-5-20251001",
+        model: str = "gpt-5.4-mini",
         memory_cost_factor: float = 0.00005,
         compression_interval: int = 20,
         cost_metric: str = "chars",
@@ -37,8 +29,8 @@ class ClaudeAdapter(LLMAdapter):
         self.memory_cost_factor = memory_cost_factor
         self.compression_interval = compression_interval
         self.cost_metric = cost_metric
-        self._client = anthropic.Anthropic(
-            api_key=os.environ["ANTHROPIC_API_KEY"],
+        self._client = openai.OpenAI(
+            api_key=os.environ["OPENAI_API_KEY"],
             max_retries=0,
         )
         self._states: Dict[str, dict] = {}
@@ -47,11 +39,10 @@ class ClaudeAdapter(LLMAdapter):
         for delay in _RETRY_DELAYS:
             try:
                 return fn()
-            except (anthropic.OverloadedError, anthropic.RateLimitError,
-                    anthropic.APIConnectionError, anthropic.APITimeoutError,
-                    anthropic.InternalServerError):
+            except (openai.RateLimitError, openai.InternalServerError,
+                    openai.APIConnectionError, openai.APITimeoutError):
                 time.sleep(delay)
-        return fn()  # intento final — si falla, propaga la excepción
+        return fn()
 
     def _get_state(self, organism_id: str) -> dict:
         if organism_id not in self._states:
@@ -84,20 +75,20 @@ class ClaudeAdapter(LLMAdapter):
         history_text = "\n".join(
             f"{m['role'].upper()}: {m['content']}" for m in state["history"]
         )
-        response = self._api_call(lambda: self._client.messages.create(
+        messages = [
+            {"role": "system", "content": constitution},
+            {"role": "user", "content": (
+                f"Here is your complete history in this world so far:\n\n{history_text}\n\n"
+                "Compress this into a concise summary. Keep what you believe is most "
+                "important for your survival. Discard the rest."
+            )},
+        ]
+        response = self._api_call(lambda: self._client.chat.completions.create(
             model=self.model,
-            system=constitution,
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"Here is your complete history in this world so far:\n\n{history_text}\n\n"
-                    "Compress this into a concise summary. Keep what you believe is most "
-                    "important for your survival. Discard the rest."
-                ),
-            }],
-            max_tokens=1000,
+            messages=messages,
+            max_completion_tokens=1000,
         ))
-        compressed = response.content[0].text
+        compressed = response.choices[0].message.content
         state["history"] = [{"role": "assistant", "content": compressed}]
         state["compression_count"] += 1
 
@@ -122,15 +113,18 @@ class ClaudeAdapter(LLMAdapter):
         if memory:
             system_prompt += f"\n\nMemory from your ancestors:\n{memory}"
 
-        messages = list(state["history"]) + [{"role": "user", "content": obs_text}]
+        messages = (
+            [{"role": "system", "content": system_prompt}]
+            + list(state["history"])
+            + [{"role": "user", "content": obs_text}]
+        )
 
-        response = self._api_call(lambda: self._client.messages.create(
+        response = self._api_call(lambda: self._client.chat.completions.create(
             model=self.model,
-            system=system_prompt,
             messages=messages,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
         ))
-        output_text = response.content[0].text
+        output_text = response.choices[0].message.content
 
         state["history"].append({"role": "user", "content": obs_text})
         state["history"].append({"role": "assistant", "content": output_text})
@@ -139,17 +133,13 @@ class ClaudeAdapter(LLMAdapter):
         state["context_chars"] = context_chars
 
         if self.cost_metric == "tokens":
-            token_count = response.usage.output_tokens
+            token_count = response.usage.completion_tokens
         else:
             token_count = int(context_chars * self.memory_cost_factor)
+
         return output_text, token_count
 
-    def feedback(
-        self,
-        organism_id: str,
-        action: Optional[str],
-        energy_delta: float,
-    ) -> bool:
+    def feedback(self, organism_id: str, action: Optional[str], energy_delta: float) -> bool:
         return False
 
     def register_child(self, child_id: str, parent_id: str) -> None:
@@ -163,15 +153,17 @@ class ClaudeAdapter(LLMAdapter):
         prompt = "Answer each question briefly, numbering your answers:\n" + "\n".join(
             f"{i + 1}. {q}" for i, q in enumerate(questions)
         )
-        messages = list(state["history"]) + [{"role": "user", "content": prompt}]
-
-        response = self._api_call(lambda: self._client.messages.create(
+        messages = (
+            [{"role": "system", "content": state["constitution"]}]
+            + list(state["history"])
+            + [{"role": "user", "content": prompt}]
+        )
+        response = self._api_call(lambda: self._client.chat.completions.create(
             model=self.model,
-            system=state["constitution"],
             messages=messages,
-            max_tokens=500,
+            max_completion_tokens=500,
         ))
-        text = response.content[0].text
+        text = response.choices[0].message.content
 
         parts = re.split(r"\n\d+\.", text)
         if len(parts) >= len(questions) + 1:
@@ -188,12 +180,12 @@ class ClaudeAdapter(LLMAdapter):
             "Is this memory semantically distinct from all the others in this list? "
             "Answer only YES or NO."
         )
-        response = self._api_call(lambda: self._client.messages.create(
+        response = self._api_call(lambda: self._client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=10,
+            max_completion_tokens=10,
         ))
-        answer = response.content[0].text.strip().upper()
+        answer = response.choices[0].message.content.strip().upper()
         return "YES" in answer
 
     def export_full_state(self, organism_id: str) -> dict | None:

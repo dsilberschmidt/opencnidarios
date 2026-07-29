@@ -16,6 +16,7 @@ from src.ruminant import Ruminant
 from src.engine import Engine
 from src.llm_adapter.dummy import DummyAdapter
 from src.llm_adapter.claude import ClaudeAdapter
+from src.llm_adapter.openai_adapter import OpenAIAdapter
 from src.logger import Logger
 from src.snapshot import write_snapshot
 
@@ -45,7 +46,7 @@ def main():
     adapter_cfg = cfg["adapter"]
 
     # config type → normalized adapter_type key (matches adapter_type class attribute)
-    _TYPE_NORM = {"dummy": "dummy", "llm": "claude"}
+    _TYPE_NORM = {"dummy": "dummy", "llm": "claude", "openai": "openai"}
 
     needed_types: set = {adapter_cfg["type"]}
     if cfg.get("resume_from"):
@@ -66,6 +67,14 @@ def main():
                 model=adapter_cfg.get("model", "claude-haiku-4-5-20251001"),
                 memory_cost_factor=adapter_cfg.get("memory_cost_factor", 0.00005),
                 compression_interval=adapter_cfg.get("compression_interval", 20),
+                cost_metric=adapter_cfg.get("cost_metric", "chars"),
+            )
+        elif cfg_type == "openai":
+            adapters[norm] = OpenAIAdapter(
+                model=adapter_cfg.get("model", "gpt-5.4-mini"),
+                memory_cost_factor=adapter_cfg.get("memory_cost_factor", 0.00005),
+                compression_interval=adapter_cfg.get("compression_interval", 20),
+                cost_metric=adapter_cfg.get("cost_metric", "chars"),
             )
         else:
             raise ValueError(
