@@ -38,10 +38,10 @@ class TickStats:
 
 
 class Engine:
-    def __init__(self, world, llm_adapter, params: Dict[str, Any], logger=None,
+    def __init__(self, world, adapters: Dict[str, Any], params: Dict[str, Any], logger=None,
                  organisms_dir: Optional[str] = None, run_id: str = ""):
         self.world = world
-        self.llm = llm_adapter
+        self.adapters = adapters
         self.p = params
         self.logger = logger
         self.organisms_dir = organisms_dir
@@ -51,6 +51,15 @@ class Engine:
         self.triggered_tokens: Dict[str, set] = {}
         self.accepted_memories: List[str] = []
         self.last_actions: Dict[str, str] = {}
+
+    def _adapter_for(self, r) -> Any:
+        try:
+            return self.adapters[r.adapter_type]
+        except KeyError:
+            raise KeyError(
+                f"No adapter registered for type {r.adapter_type!r} "
+                f"(organism {r.id[:8]}). Available: {list(self.adapters)}"
+            )
 
     def seed_population(self, ruminants: List[Any]) -> None:
         self.ruminants = list(ruminants)
@@ -109,7 +118,7 @@ class Engine:
         outputs: Dict[int, Dict[str, Any]] = {}
         for idx, r in enumerate(self.ruminants):
             obs = self._build_observation(r)
-            out_text, out_tokens = self.llm.generate(
+            out_text, out_tokens = self._adapter_for(r).generate(
                 organism_id=r.id,
                 constitution=r.constitution_text,
                 memory=r.memory_text,
@@ -143,7 +152,7 @@ class Engine:
 
             trigger_memory = r.memory_text != prev_memory[idx]
             if trigger_memory:
-                is_novel = self.llm.is_memory_novel(r.memory_text, self.accepted_memories)
+                is_novel = self._adapter_for(r).is_memory_novel(r.memory_text, self.accepted_memories)
                 if is_novel:
                     self.accepted_memories.append(r.memory_text)
                     print(f"[memory-novel] {r.id[:8]} tick={self.tick}")
@@ -152,8 +161,8 @@ class Engine:
             if (trigger_token or trigger_memory) and self.logger is not None:
                 trigger_type = "token" if trigger_token else "memory"
                 print(f"[interview-clone] {r.id[:8]} tick={self.tick} trigger={trigger_type}")
-                answers = self.llm.interview(r.id, INTERVIEW_QUESTIONS)
-                state = self.llm.get_organism_state(r.id)
+                answers = self._adapter_for(r).interview(r.id, INTERVIEW_QUESTIONS)
+                state = self._adapter_for(r).get_organism_state(r.id)
                 self.logger.write_interview_clone(
                     tick=self.tick,
                     organism_id=r.id,
@@ -221,9 +230,9 @@ class Engine:
                 feeding_delta = photo_energy
                 r.energy_internal += feeding_delta
             if a != "ATTACK":
-                discovered = self.llm.feedback(r.id, a, feeding_delta)
+                discovered = self._adapter_for(r).feedback(r.id, a, feeding_delta)
                 if discovered and self.logger is not None:
-                    state = self.llm.get_organism_state(r.id)
+                    state = self._adapter_for(r).get_organism_state(r.id)
                     self.logger.log_event(
                         self.tick, "discovery", r.id,
                         action=a, x=r.x, y=r.y, **state,
@@ -257,12 +266,12 @@ class Engine:
                     continue
                 r.energy_internal -= float(repro_cost)
                 child = r.clone_child(child_e0=child_e0)
-                self.llm.register_child(child.id, r.id)
+                self._adapter_for(child).register_child(child.id, r.id)
                 new_children.append(child)
                 births += 1
                 print(f"[birth] {child.id[:8]} tick={self.tick} parent={r.id[:8]}")
                 if self.logger is not None:
-                    state = self.llm.get_organism_state(child.id)
+                    state = self._adapter_for(child).get_organism_state(child.id)
                     self.logger.log_event(
                         self.tick, "birth", child.id,
                         parent_id=r.id, x=child.x, y=child.y, **state,
@@ -295,7 +304,7 @@ class Engine:
                 if o.id != r.id and o.id not in killed
             ]
             if not candidates:
-                self.llm.feedback(r.id, "ATTACK", 0.0)  # no victim → no discovery
+                self._adapter_for(r).feedback(r.id, "ATTACK", 0.0)  # no victim → no discovery
                 continue
             victim = random.choice(candidates)
             energy_gained = attack_efficiency * victim.energy_internal
@@ -303,9 +312,9 @@ class Engine:
             victim.energy_internal = 0.0
             killed.add(victim.id)
             attacks += 1
-            discovered = self.llm.feedback(r.id, "ATTACK", energy_gained)
+            discovered = self._adapter_for(r).feedback(r.id, "ATTACK", energy_gained)
             if discovered and self.logger is not None:
-                state = self.llm.get_organism_state(r.id)
+                state = self._adapter_for(r).get_organism_state(r.id)
                 self.logger.log_event(
                     self.tick, "discovery", r.id,
                     action="ATTACK", x=r.x, y=r.y, **state,
@@ -335,14 +344,14 @@ class Engine:
                 cause = "attacked" if r.id in killed else "starvation"
                 print(f"[death] {r.id[:8]} tick={self.tick} cause={cause}")
                 if self.logger is not None:
-                    state = self.llm.get_organism_state(r.id)
+                    state = self._adapter_for(r).get_organism_state(r.id)
                     self.logger.log_event(
                         self.tick, "death", r.id,
                         cause=cause, age=r.age, x=r.x, y=r.y, **state,
                     )
                 if self.organisms_dir is not None:
                     write_snapshot(r, cause=cause, run_id=self.run_id,
-                                   tick=self.tick, adapter=self.llm,
+                                   tick=self.tick, adapter=self._adapter_for(r),
                                    organisms_dir=self.organisms_dir)
         self.ruminants = alive
 

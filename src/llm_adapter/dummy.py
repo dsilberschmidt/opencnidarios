@@ -40,6 +40,8 @@ _DISCOVERY_JUMP: Dict[str, float] = {
 
 
 class DummyAdapter(LLMAdapter):
+    adapter_type = "dummy"
+
     def __init__(
         self,
         p_action: float = 0.05,
