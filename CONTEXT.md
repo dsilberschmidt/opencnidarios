@@ -375,6 +375,26 @@ Pendiente anotado (no bloqueante): verificación cualitativa de `_compress()` co
 
 Mergeado en `10a3ab7`.
 
+### Feature: organism resume/transplant from snapshots (2026-07-29)
+
+Mecanismo de lectura que completa la pieza de snapshots — permite retomar un organismo desde un JSON de `organisms/` en un run nuevo, transplantándolo. No es continuidad física del World: nueva arena, nueva posición, mismo organismo (decisión de diseño ya tomada).
+
+Config nuevo: `"resume_from"`, lista top-level de objetos `{"path": "organisms/xxx.json", "x"?: N, "y"?: N}` — independiente del campo `"adapter"`/`"population"`, ambos mecanismos alimentan la misma lista final de organismos. `x` e `y` opcionales: si se omiten, posición aleatoria.
+
+**Doble identidad preservada:** el organismo resumido mantiene su `id` original (linaje estable) pero recibe un `instance_id` nuevo (esta materialización), con `forked_from` poblado apuntando a `{instance_id, run_id, tick}` del snapshot de origen — así una bifurcación no se confunde con un nacimiento P0 en el análisis de linaje.
+
+**El organismo preserva su propia `constitution_text`, `memory_text`, `energy_internal` y `age` del snapshot** — no adopta la constitución ni la energía inicial del run nuevo al que se transplanta. Los P0 nuevos del mismo run sí usan el config normal.
+
+Nuevo método `restore_state(organism_id, state)` en la interfaz `LLMAdapter` (default no-op en `base.py`, implementado en `ClaudeAdapter` y `OpenAIAdapter`) — puebla `self._states` con el historial completo del snapshot *antes* del primer `generate()` de ese organismo en el run nuevo.
+
+Nuevo evento `"resumed"` en `events_*.jsonl` (`tick=0`, antes del loop principal) con `instance_id`, `forked_from`, `adapter_type` — para que el análisis de linaje distinga bifurcaciones de nacimientos frescos.
+
+**Verificado con datos reales:** se retomaron los dos organismos del run mixto de la mañana (`77611abd`, claude, y `7fa90c0a`, openai) en un run nuevo de 5 ticks junto con 3 organismos P0 frescos. Confirmado: `id` preservado, `instance_id` distinto, `forked_from` correcto, `context_chars` arrancando en el valor del snapshot (no en 0) confirmando que `restore_state()` cargó el historial real. Dato narrativo: `77611abd` retomó exactamente donde había dejado su aprendizaje — descubrió SOUTH en tick 2 y volvió a disparar EAT en tick 3 de la nueva vida, evidencia de que el conocimiento adquirido se preserva de verdad, no solo el estado numérico.
+
+**Deuda técnica documentada** (comentario en `run.py` cerca de `_build_adapter`): la integración entre `resume_from` y el mecanismo `"population"` (población P0 de múltiples tipos, implementado en branch separada `mixed-population-config`, no mergeada aún) todavía no está resuelta — el `spec` de config usado para construir cada adapter necesita mapearse por tipo (`spec_by_cfg_type`) en vez del fallback actual, que solo cubre el caso de un único `"adapter"` global. Pendiente para cuando se integren ambas branches.
+
+Mergeado en `ed8b31f`.
+
 ### Problema identificado: feedback de movimiento no funciona
 
 `feedback()` mide únicamente el delta inmediato de energía del feeding. Moverse
