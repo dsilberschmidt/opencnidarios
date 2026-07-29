@@ -188,6 +188,15 @@ class OpenAIAdapter(LLMAdapter):
         answer = response.choices[0].message.content.strip().upper()
         return "YES" in answer
 
+    def restore_state(self, organism_id: str, state: dict) -> None:
+        self._states[organism_id] = {
+            "history":           list(state["history"]),
+            "constitution":      state["constitution"],
+            "tick_count":        state["tick_count"],
+            "compression_count": state["compression_count"],
+            "context_chars":     state["context_chars"],
+        }
+
     def export_full_state(self, organism_id: str) -> dict | None:
         state = self._states.get(organism_id)
         if state is None:
