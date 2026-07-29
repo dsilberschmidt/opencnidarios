@@ -44,7 +44,9 @@ class ClaudeAdapter(LLMAdapter):
         for delay in _RETRY_DELAYS:
             try:
                 return fn()
-            except (anthropic.OverloadedError, anthropic.RateLimitError):
+            except (anthropic.OverloadedError, anthropic.RateLimitError,
+                    anthropic.APIConnectionError, anthropic.APITimeoutError,
+                    anthropic.InternalServerError):
                 time.sleep(delay)
         return fn()  # intento final — si falla, propaga la excepción
 
