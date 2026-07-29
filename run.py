@@ -195,7 +195,7 @@ def main():
                 write_snapshot(r, cause="end_of_run", run_id=run_id,
                                tick=engine.tick, adapter=adapters[r.adapter_type],
                                organisms_dir=organisms_dir)
-    except Exception:
+    except (Exception, KeyboardInterrupt):
         for r in engine.ruminants:
             write_snapshot(r, cause="crash", run_id=run_id,
                            tick=engine.tick, adapter=adapters[r.adapter_type],
