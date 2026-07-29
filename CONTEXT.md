@@ -357,6 +357,24 @@ Verificado sin API real: routing correcto (cada adapter solo fue llamado por sus
 
 Mergeado en `d0b5654`.
 
+### Fix: expand Claude retry coverage (2026-07-29)
+
+El retry wrapper de `ClaudeAdapter._api_call()` solo cubría `OverloadedError` y `RateLimitError` desde su implementación original. Se amplió para cubrir también `APIConnectionError`, `APITimeoutError`, e `InternalServerError` — verificadas como excepciones reales del SDK de Anthropic mediante inspección de jerarquía (no supuestas). Mismo esquema de delays (2s→4s→8s→60s→180s). Verificado con test aislado (monkeypatch de `_client.messages.create`, `time.sleep` mockeado): las tres excepciones nuevas disparan retry (calls=6), `AuthenticationError` y `BadRequestError` siguen sin reintentar (calls=1).
+
+Mergeado en `fe8c4c2`.
+
+### Feature: OpenAIAdapter + configurable cost_metric (2026-07-29)
+
+Segundo adapter LLM real, siguiendo el mismo patrón que `ClaudeAdapter` (`adapter_type="openai"`, mismo paralelismo interno: constitution/history separados en `self._states`). Modelo default: `gpt-5.4-mini` (elegido por paridad de capacidad con Claude Haiku 4.5 — ambos son el tier "mini" más capaz de su generación respectiva, no por precio).
+
+Diferencias de formato respecto a Claude: `system` va dentro del array de `messages` (no como argumento separado), `max_completion_tokens` (no `max_tokens` — confirmado con smoke test: el modelo rechaza `max_tokens`), `response.choices[0].message.content`, `response.usage.completion_tokens`. Retry con las mismas 4 excepciones transitorias verificadas para el SDK de `openai` (`RateLimitError`, `InternalServerError`, `APIConnectionError`, `APITimeoutError`), mismo esquema de delays. Prompts de compresión y de entrevista idénticos textualmente a `ClaudeAdapter`, a propósito, para comparabilidad entre proveedores.
+
+Nuevo: `cost_metric` configurable (`"chars"` | `"tokens"`, default `"chars"`) agregado a ambos adapters reales (Claude y OpenAI). Decisión de diseño: `"chars"` mide el comportamiento del organismo de forma agnóstica al proveedor — evita que la eficiencia de tokenizer de un proveedor se traduzca en ventaja evolutiva no ganada dentro de la arena. `"tokens"` usa el costo real de tokens de cada proveedor cuando se quiere estudiar explícitamente si la eficiencia de infraestructura es parte de lo que selecciona la supervivencia. `DummyAdapter` no soporta `cost_metric="tokens"` (`supports_token_cost_metric = False`). Verificado con smoke tests reales contra la API de OpenAI: formato de respuesta, excepciones reales, ambos `cost_metric`.
+
+Pendiente anotado (no bloqueante): verificación cualitativa de `_compress()` con distintos historiales de prueba (variando extensión y homogeneidad) para confirmar que ambos proveedores comprimen de forma comparable con el mismo prompt. El primer run mixto real (Claude + OpenAI conviviendo en la misma arena) todavía no se corrió — la arquitectura multi-adapter solo fue probada con datos reales de un proveedor a la vez.
+
+Mergeado en `10a3ab7`.
+
 ### Problema identificado: feedback de movimiento no funciona
 
 `feedback()` mide únicamente el delta inmediato de energía del feeding. Moverse
