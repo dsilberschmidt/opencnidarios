@@ -309,6 +309,54 @@ Hallazgos clave:
 
 Run parcial previo `_103123` (84 ticks, crash en tick 85 por OverloadedError 529) motivó el retry wrapper (`src/llm_adapter/claude.py`, commit `7a1472b`). Ver `runs/2026-07-28_v06c_parser_fixed_103123/NOTES.md`.
 
+### Feature: organism snapshot persistence (2026-07-28)
+
+Al morir un organismo (`cause="starvation"` o `"attacked"`), al terminar un run normalmente (`cause="end_of_run"`), al detenerse por checkpoint (`cause="checkpoint"`), o ante un crash irrecuperable (`cause="crash"`), se serializa su estado completo a `organisms/{instance_id}_{id[:8]}_tick{N:06d}.json`.
+
+Campos clave del JSON:
+- `id` — UUID estable del linaje (se hereda en la reproducción como `parent_id`)
+- `instance_id` — UUID de esta materialización concreta del organismo
+- `forked_from` — reservado para transplante/resume (actualmente siempre `null`)
+- `cause` — `"starvation" | "attacked" | "end_of_run" | "crash" | "checkpoint"`
+- `adapter_type` — tipo de adapter que generó este organismo
+- `adapter_state` — historial conversacional completo + metadata del ClaudeAdapter
+
+Solo aplica a adapters LLM reales: la interfaz base define `export_full_state() → None` como no-op; `DummyAdapter` hereda ese default y no genera snapshots. `ClaudeAdapter` sobreescribe con el historial real.
+
+Verificado con QA runs sintéticos cubriendo las tres causas con ClaudeAdapter real:
+- `qa_snapshot_test` (run de 15 ticks, `cause=end_of_run`)
+- `qa_snapshot_death_test` (e_i0=2, `cause=starvation` en tick 3–4)
+- `qa_snapshot_crash_test` (historial fabricado, monkeypatch de API, `cause=crash` sin llamadas reales)
+
+Mergeado en `14b638e`.
+
+### Feature: periodic checkpoints (2026-07-28)
+
+Config opcional `"checkpoint_every": N` (entero, nivel raíz del config JSON, junto a `"ticks"`). Si está presente, el run se detiene solo cuando `engine.tick % N == 0` (y aún hay población viva), escribe snapshots de todos los sobrevivientes con `cause="checkpoint"`, imprime un resumen y termina normalmente — no es una pausa, el proceso no sigue corriendo.
+
+Lógica anti-duplicado: condición `engine.tick < cfg["ticks"]` impide que el checkpoint dispare en el último tick configurado. En ese caso el loop termina por `for-else` y escribe `cause="end_of_run"` exactamente una vez. Si `checkpoint_every` no está en el config, el comportamiento es idéntico al anterior (sin cambios).
+
+Verificado sin API real: regresión con DummyAdapter (loop completo intacto), corte en tick 20 con `ticks=50`/`checkpoint_every=20`, y no-duplicado con `checkpoint_every==ticks`.
+
+Mergeado en `19a5310`.
+
+### Feature: multi-adapter Engine (2026-07-29)
+
+`Engine` ya no tiene un único `self.llm` — recibe `adapters: Dict[str, LLMAdapter]` y resuelve el adapter correcto por organismo vía `self._adapter_for(r)`, que hace lookup por `r.adapter_type` con error claro si el tipo no está registrado.
+
+Cambios asociados:
+- `Ruminant` gana campo `adapter_type: str = "unknown"` (default). `clone_child()` lo hereda explícitamente — sin asignación manual afuera.
+- `DummyAdapter.adapter_type = "dummy"` (override explícito; antes heredaba `"unknown"` de la base).
+- `run.py` normaliza el tipo de config (`"llm"` → `"claude"`, `"dummy"` → `"dummy"`), construye el dict `adapters`, y lo pasa a Engine. Los ruminantes P0 reciben `adapter_type` al crearse. Stub `resume_from` preparado (lee `adapter_type` de snapshots previos sin usarlos todavía).
+
+Invariante: los adapters en el dict son instancias compartidas entre todos los organismos del mismo tipo — la sesión conversacional por-organismo sigue viviendo dentro del adapter (en `_states` para ClaudeAdapter). Solo cambia el mecanismo de selección.
+
+Habilita a futuro: (a) población mixta con distintos proveedores LLM conviviendo en la misma arena, (b) transplante/resume de organismos con `adapter_type` distinto al de los P0 del run.
+
+Verificado sin API real: routing correcto (cada adapter solo fue llamado por sus organismos asignados, sin isinstance), regresión con DummyAdapter (CSV idéntico + asserts explícitos de normalización), y herencia de `adapter_type` en `clone_child()`.
+
+Mergeado en `d0b5654`.
+
 ### Problema identificado: feedback de movimiento no funciona
 
 `feedback()` mide únicamente el delta inmediato de energía del feeding. Moverse
