@@ -41,6 +41,7 @@ _DISCOVERY_JUMP: Dict[str, float] = {
 
 class DummyAdapter(LLMAdapter):
     adapter_type = "dummy"
+    supports_token_cost_metric = False
 
     def __init__(
         self,
